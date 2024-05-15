@@ -1,0 +1,98 @@
+name: Build and Deploy Evaluation Function to Lambda Feedback
+
+on:
+  workflow_call:
+    inputs:
+      region:
+        type: string
+        description: "The AWS region to deploy to"
+        default: "eu-west-2"
+        required: false
+      template-repository-name:
+        type: string
+        description: "The name of the repository where the template is located"
+        required: true
+      build-target:
+        type: string
+        description: "The target stage of the image to build"
+        required: false
+      build-args:
+        type: string
+        description: "The build arguments to pass to the Docker build"
+        required: false
+    secrets:
+      build-secrets:
+        description: "The Docker secrets to use for the build"
+        required: false
+
+jobs:
+  setup:
+    name: Setup
+    runs-on: ubuntu-latest
+    if: github.repository != inputs.template-repository-name
+    outputs:
+      evaluation_function_name: ${{ steps.evaluation_function_name.outputs.name }}
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for config.json
+        run: |
+          if [[ ! -f "config.json" ]]; then echo "Error: config.json not found."; exit 1; fi
+
+      - name: Parse config.json
+        id: config
+        run: |
+          echo 'config<<EOF' >> $GITHUB_OUTPUT
+          cat ./config.json >> $GITHUB_OUTPUT
+          echo 'EOF' >> $GITHUB_OUTPUT
+
+      - name: Get Evaluation Function Name
+        id: evaluation_function_name
+        run: |
+          functionName="${{fromJson(steps.config.outputs.config).EvaluationFunctionName}}"
+          if [[ -z "$functionName" ]]; then echo "Set EvaluationFunctionName in config.json"; exit 1; fi
+          echo "name=$functionName" >> "$GITHUB_OUTPUT"
+
+  build:
+    uses: ./.github/workflows/lambda_build.yml
+    needs: setup
+    strategy:
+      fail-fast: false
+      matrix:
+        environment: [staging, production]
+    with:
+      environment: ${{ matrix.environment }}
+      function-name: ${{ needs.setup.outputs.evaluation_function_name }}
+      region: ${{ inputs.region }}
+      build-target: ${{ inputs.build-target }}
+      build-args: ${{ inputs.build-args }}
+    secrets:
+      build-secrets: ${{ secrets.build-secrets }}
+
+
+  deploy-staging:
+    uses: ./.github/workflows/lambda_deploy.yml
+    needs: [setup, build]
+    with:
+      environment: staging
+      api-url: https://staging-api.lambdafeedback.com
+      image-name: ${{ needs.build.outputs.registry }}/lambda-feedback-staging-functions-repository:${{ needs.setup.outputs.evaluation_function_name }}
+      function-name: ${{ needs.setup.outputs.evaluation_function_name }}
+      region: ${{ inputs.region }}
+
+  deploy-production:
+    uses: ./.github/workflows/lambda_deploy.yml
+    needs: [setup, build]
+    with:
+      environment: production
+      api-url: https://prod-api.lambdafeedback.com
+      image-name: ${{ needs.build.outputs.registry }}/lambda-feedback-production-functions-repository:${{ needs.setup.outputs.evaluation_function_name }}
+      function-name: ${{ needs.setup.outputs.evaluation_function_name }}
+      region: ${{ inputs.region }}

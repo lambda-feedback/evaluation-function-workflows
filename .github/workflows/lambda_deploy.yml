@@ -1,0 +1,58 @@
+name: Deploy Evaluation Function to Lambda Feedback
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        type: string
+        description: "The environment to deploy to"
+        required: true
+      api-url:
+        type: string
+        description: "The URL of the backend API"
+        required: true
+      image-name:
+        type: string
+        description: "The name of the Docker image to deploy"
+        required: true
+      function-name:
+        type: string
+        description: "The name of the Lambda function to deploy"
+        required: true
+      region:
+        type: string
+        description: "The AWS region to deploy to"
+        default: "eu-west-2"
+        required: false
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.LAMBDA_CONTAINER_PIPELINE_AWS_ID }}
+          aws-secret-access-key: ${{ secrets.LAMBDA_CONTAINER_PIPELINE_AWS_SECRET }}
+          aws-region: ${{ inputs.region }}
+
+      - name: Deploy Evaluation Function
+        id: deploy-evaluation-function
+        env:
+          BACKEND_API_URL: ${{ inputs.api-url }}
+          API_KEY: ${{ secrets.FUNCTION_ADMIN_API_KEY }}
+          IMAGE_NAME: ${{ inputs.image-name }}
+          FUNCTION_NAME: ${{ inputs.function-name }}
+        run: |
+          curl -f --location --request POST "$BACKEND_API_URL/grading-function/ensure" \
+          --header 'content-type: application/json' \
+          --data-raw "{
+              \"apiKey\": \"$API_KEY\",
+              \"dockerImageUri\": \"$IMAGE_NAME\",
+              \"functionName\": \"$FUNCTION_NAME\"
+          }"
