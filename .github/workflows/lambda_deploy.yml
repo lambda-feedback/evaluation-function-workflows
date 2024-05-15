@@ -24,6 +24,16 @@ on:
         description: "The AWS region to deploy to"
         default: "eu-west-2"
         required: false
+    secrets:
+      aws-key-id:
+        description: "The AWS access key ID"
+        required: true
+      aws-secret-key:
+        description: "The AWS secret access key"
+        required: true
+      function-admin-api-key:
+        description: "The API key for the Lambda Feedback function admin API"
+        required: true
 
 jobs:
   deploy:
@@ -37,15 +47,15 @@ jobs:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.LAMBDA_CONTAINER_PIPELINE_AWS_ID }}
-          aws-secret-access-key: ${{ secrets.LAMBDA_CONTAINER_PIPELINE_AWS_SECRET }}
+          aws-access-key-id: ${{ secrets.aws-key-id }}
+          aws-secret-access-key: ${{ secrets.aws-secret-key }}
           aws-region: ${{ inputs.region }}
 
       - name: Deploy Evaluation Function
         id: deploy-evaluation-function
         env:
           BACKEND_API_URL: ${{ inputs.api-url }}
-          API_KEY: ${{ secrets.FUNCTION_ADMIN_API_KEY }}
+          API_KEY: ${{ secrets.function-admin-api-key }}
           IMAGE_NAME: ${{ inputs.image-name }}
           FUNCTION_NAME: ${{ inputs.function-name }}
         run: |

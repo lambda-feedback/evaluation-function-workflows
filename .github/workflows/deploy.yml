@@ -21,6 +21,15 @@ on:
         description: "The build arguments to pass to the Docker build"
         required: false
     secrets:
+      aws-key-id:
+        description: "The AWS access key ID"
+        required: true
+      aws-secret-key:
+        description: "The AWS secret access key"
+        required: true
+      function-admin-api-key:
+        description: "The API key for the Lambda Feedback function admin API"
+        required: true
       build-secrets:
         description: "The Docker secrets to use for the build"
         required: false
@@ -74,8 +83,9 @@ jobs:
       build-target: ${{ inputs.build-target }}
       build-args: ${{ inputs.build-args }}
     secrets:
+      aws-key-id: ${{ secrets.aws-key-id }}
+      aws-secret-key: ${{ secrets.aws-secret-key }}
       build-secrets: ${{ secrets.build-secrets }}
-
 
   deploy-staging:
     uses: ./.github/workflows/lambda_deploy.yml
@@ -86,6 +96,10 @@ jobs:
       image-name: ${{ needs.build.outputs.registry }}/lambda-feedback-staging-functions-repository:${{ needs.setup.outputs.evaluation_function_name }}
       function-name: ${{ needs.setup.outputs.evaluation_function_name }}
       region: ${{ inputs.region }}
+    secrets:
+      aws-key-id: ${{ secrets.aws-key-id }}
+      aws-secret-key: ${{ secrets.aws-secret-key }}
+      function-admin-api-key: ${{ secrets.function-admin-api-key }}
 
   deploy-production:
     uses: ./.github/workflows/lambda_deploy.yml
@@ -96,3 +110,7 @@ jobs:
       image-name: ${{ needs.build.outputs.registry }}/lambda-feedback-production-functions-repository:${{ needs.setup.outputs.evaluation_function_name }}
       function-name: ${{ needs.setup.outputs.evaluation_function_name }}
       region: ${{ inputs.region }}
+    secrets:
+      aws-key-id: ${{ secrets.aws-key-id }}
+      aws-secret-key: ${{ secrets.aws-secret-key }}
+      function-admin-api-key: ${{ secrets.function-admin-api-key }}
