@@ -16,6 +16,16 @@ on:
         type: string
         description: "The name of the Lambda function to deploy"
         required: true
+      build-file:
+        type: string
+        description: "The path to the Dockerfile to build"
+        required: false
+        default: "Dockerfile"
+      build-context:
+        type: string
+        description: "The context to use for the Docker build"
+        required: false
+        default: "."
       build-target:
         type: string
         description: "The target stage of the image to build"
@@ -90,7 +100,8 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v4
         with:
-          context: .
+          file: ${{ inputs.build-file || 'Dockerfile' }}
+          context: ${{ inputs.build-context || '.'}}
           target: ${{ inputs.build-target }}
           push: true
           provenance: false

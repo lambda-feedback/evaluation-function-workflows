@@ -12,6 +12,16 @@ on:
         type: string
         description: "The name of the repository where the template is located"
         required: true
+      build-file:
+        type: string
+        description: "The path to the Dockerfile to build"
+        required: false
+        default: "Dockerfile"
+      build-context:
+        type: string
+        description: "The context to use for the Docker build"
+        required: false
+        default: "."
       build-target:
         type: string
         description: "The target stage of the image to build"
@@ -80,6 +90,8 @@ jobs:
       environment: ${{ matrix.environment }}
       function-name: ${{ needs.setup.outputs.evaluation_function_name }}
       region: ${{ inputs.region }}
+      build-file: ${{ inputs.build-file }}
+      build-context: ${{ inputs.build-context }}
       build-target: ${{ inputs.build-target }}
       build-args: ${{ inputs.build-args }}
     secrets:
