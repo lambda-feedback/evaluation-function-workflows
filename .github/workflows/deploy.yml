@@ -60,13 +60,17 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Set up boilerplate config.json
+        if: github.repository == inputs.template-repository-name
+        run: |
+          functionName=$(echo "${{ github.event.repository.name }}" | gsed -E 's/([A-Z])([A-Z]*)/\L\1\2/g' | gsed -E 's/-([a-z])/\U\1/g' | tr -d '-')
+          echo "{\"EvaluationFunctionName\": \"$functionName\"}" > config.json
+
       - name: Check for config.json
-        if: github.repository != inputs.template-repository-name
         run: |
           if [[ ! -f "config.json" ]]; then echo "Error: config.json not found."; exit 1; fi
 
       - name: Parse config.json
-        if: github.repository != inputs.template-repository-name
         id: config
         run: |
           echo 'config<<EOF' >> $GITHUB_OUTPUT
@@ -75,16 +79,9 @@ jobs:
 
       - name: Get Evaluation Function Name
         id: evaluation_function_name
-        env:
-          TEMPLATE_REPOSITORY: ${{ github.repository == inputs.template-repository-name }}
         run: |
-          if [[ $TEMPLATE_REPOSITORY == true ]]; then
-            # Convert repository name to function name
-            functionName=$(echo "${{ github.event.repository.name }}" | gsed -E 's/([A-Z])([A-Z]*)/\L\1\2/g' | gsed -E 's/-([a-z])/\U\1/g' | tr -d '-')
-          else
-            functionName="${{fromJson(steps.config.outputs.config).EvaluationFunctionName}}"
-            if [[ -z "$functionName" ]]; then echo "Set EvaluationFunctionName in config.json"; exit 1; fi
-          fi
+          functionName="${{fromJson(steps.config.outputs.config).EvaluationFunctionName}}"
+          if [[ -z "$functionName" ]]; then echo "Set EvaluationFunctionName in config.json"; exit 1; fi
           echo "name=$functionName" >> "$GITHUB_OUTPUT"
 
   build:
