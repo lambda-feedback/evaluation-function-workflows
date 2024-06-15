@@ -56,7 +56,7 @@ on:
 
 jobs:
   build:
-    name: Build
+    name: Build (${{ inputs.environment }})
     runs-on: ubuntu-latest
     permissions:
       contents: read
