@@ -39,6 +39,10 @@ on:
         description: "Whether to push the image to the registry"
         required: false
         default: true
+      build-platforms:
+        type: string
+        description: "The platforms to build the image for"
+        required: false
     secrets:
       aws-key-id:
         description: "The AWS access key ID"
@@ -114,5 +118,6 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max,ignore-error=true
+          platforms: ${{ inputs.build-platforms }}
           build-args: ${{ inputs.build-args }}
           secrets: ${{ secrets.build-secrets }}
