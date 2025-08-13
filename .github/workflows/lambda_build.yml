@@ -106,6 +106,16 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Write license file if secret exists
+        run:
+            if [ -n "${{ secrets.LICENSE }}" ]; then
+              echo "${{ secrets.LICENSE }}" > dist/LICENSE.txt
+              echo "License file created at dist/LICENSE.txt"
+            else
+              echo "LICENSE_TEXT secret not provided. Skipping license file creation."
+            fi
+
+
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
