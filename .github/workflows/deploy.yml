@@ -47,6 +47,9 @@ on:
       build-secrets:
         description: "The Docker secrets to use for the build"
         required: false
+      LICENSE:
+        description: "The licence file to bundle into the ECR image"
+        required: false
 
 jobs:
   setup:
@@ -109,6 +112,7 @@ jobs:
       aws-key-id: ${{ secrets.aws-key-id }}
       aws-secret-key: ${{ secrets.aws-secret-key }}
       build-secrets: ${{ secrets.build-secrets }}
+      license: ${{ secrets.LICENSE }}
 
   deploy-staging:
     uses: ./.github/workflows/lambda_deploy.yml
