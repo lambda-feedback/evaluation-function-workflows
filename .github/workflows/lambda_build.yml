@@ -72,8 +72,6 @@ jobs:
       id-token: write
     outputs:
       registry: ${{ steps.login-ecr.outputs.registry }}
-    env:
-      LICENSE: ${{ secrets.LICENSE }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -117,18 +115,19 @@ jobs:
             if [ -n "${{ secrets.LICENSE }}" ]; then
               echo "${{ secrets.LICENSE }}" > dist/LICENSE.txt
               echo "License file created at dist/LICENSE.txt"
+              echo "target=with-licence" >> $GITHUB_OUTPUT
             else
               echo "LICENSE_TEXT secret not provided. Skipping license file creation."
             fi
 
 
       - name: Build and push with licence
-        if: ${{ env.LICENSE != '' }}
+        if: ${{ secrets.LICENSE != '' }}
         uses: docker/build-push-action@v6
         with:
           file: ${{ inputs.build-file || 'Dockerfile' }}
           context: ${{ inputs.build-context || '.'}}
-          target: with-license
+          target: ${{ steps.license.outputs.target }}
           push: ${{ inputs.build-push }}
           provenance: false
           tags: ${{ steps.meta.outputs.tags }}
@@ -140,7 +139,7 @@ jobs:
           secrets: ${{ secrets.build-secrets }}
 
       - name: Build and push without licence
-        if: ${{ env.LICENSE != '' }}
+        if: ${{ secrets.LICENSE != '' }}
         uses: docker/build-push-action@v6
         with:
           file: ${{ inputs.build-file || 'Dockerfile' }}
