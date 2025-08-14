@@ -111,7 +111,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Write license file if secret exists
-        run: |
+        run:
             if [ -n "${{ secrets.LICENSE }}" ]; then
               echo "${{ secrets.LICENSE }}" > dist/LICENSE.txt
               echo "License file created at dist/LICENSE.txt"
