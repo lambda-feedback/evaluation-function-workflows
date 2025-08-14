@@ -115,7 +115,6 @@ jobs:
       - name: Write license file if secret exists
         run: |
             if [ -n "${{ secrets.LICENSE }}" ]; then
-              mkdir dist/
               echo "${{ secrets.LICENSE }}" > dist/LICENSE.txt
               echo "License file created at dist/LICENSE.txt"
             else
