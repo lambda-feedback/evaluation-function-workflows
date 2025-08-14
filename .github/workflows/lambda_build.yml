@@ -53,9 +53,6 @@ on:
       build-secrets:
         description: "The Docker secrets to use for the build"
         required: false
-      LICENSE:
-        description: "The licence file to bundle into the ECR image"
-        required: false
     outputs:
       registry:
         description: "The registry where the image was pushed"
