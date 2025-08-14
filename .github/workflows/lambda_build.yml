@@ -115,31 +115,12 @@ jobs:
             if [ -n "${{ secrets.LICENSE }}" ]; then
               echo "${{ secrets.LICENSE }}" > dist/LICENSE.txt
               echo "License file created at dist/LICENSE.txt"
-              echo "target=with-licence" >> $GITHUB_OUTPUT
             else
               echo "LICENSE_TEXT secret not provided. Skipping license file creation."
             fi
 
 
-      - name: Build and push with licence
-        if: ${{ secrets.LICENSE != '' }}
-        uses: docker/build-push-action@v6
-        with:
-          file: ${{ inputs.build-file || 'Dockerfile' }}
-          context: ${{ inputs.build-context || '.'}}
-          target: ${{ steps.license.outputs.target }}
-          push: ${{ inputs.build-push }}
-          provenance: false
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max,ignore-error=true
-          platforms: ${{ inputs.build-platforms }}
-          build-args: ${{ inputs.build-args }}
-          secrets: ${{ secrets.build-secrets }}
-
-      - name: Build and push without licence
-        if: ${{ secrets.LICENSE != '' }}
+      - name: Build and push
         uses: docker/build-push-action@v6
         with:
           file: ${{ inputs.build-file || 'Dockerfile' }}
