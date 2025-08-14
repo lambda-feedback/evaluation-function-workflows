@@ -57,6 +57,10 @@ on:
       registry:
         description: "The registry where the image was pushed"
         value: ${{ jobs.build.outputs.registry }}
+    include-licence-file:
+      type: boolean
+      required: false
+      default: false
 
 jobs:
   build:
