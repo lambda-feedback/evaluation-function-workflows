@@ -41,6 +41,11 @@ jobs:
     steps:
     - uses: 'actions/checkout@v4'
 
+    - name: Debug OIDC token
+      run: |
+        echo "${ACTIONS_ID_TOKEN_REQUEST_URL}"
+        echo "${ACTIONS_ID_TOKEN_REQUEST_TOKEN}"
+
     - id: 'auth'
       uses: 'google-github-actions/auth@v3'
       with:
