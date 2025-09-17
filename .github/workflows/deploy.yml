@@ -48,6 +48,9 @@ on:
       build-secrets:
         description: "The Docker secrets to use for the build"
         required: false
+      gcp_credentials:
+        description: "The JSON key for deploying to GCP"
+        required: true
 
 jobs:
   setup:
