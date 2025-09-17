@@ -83,6 +83,7 @@ jobs:
           gcloud auth configure-docker ${{ inputs.region }}docker.pkg.dev
     - name: Build and Push Docker image
       run: |
-        IMAGE_URI="${{ inputs.region }}-docker.pkg.dev/wolfram-evaluation-function/evaluation-function/${{inputs.function-name}}:latest"
+    
+        IMAGE_URI="europe-west2-docker.pkg.dev/wolfram-evaluation-functions/evaluation-function/${{inputs.function-name}}:latest"
         docker build -t "$IMAGE_URI" .
         docker push "$IMAGE_URI"
