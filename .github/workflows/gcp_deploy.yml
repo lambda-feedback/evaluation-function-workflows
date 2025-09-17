@@ -28,6 +28,9 @@ on:
       function-admin-api-key:
         description: "The API key for the Lambda Feedback function admin API"
         required: false
+      gcp_credentials:
+        description: "The JSON key for deploying to GCP"
+        required: true
 
 jobs:
   deploy:
@@ -44,8 +47,7 @@ jobs:
     - id: 'auth'
       uses: 'google-github-actions/auth@v3'
       with:
-        project_id: 'wolfram-evaluation-functions'
-        workload_identity_provider: 'projects/811110518139/locations/global/workloadIdentityPools/github/providers/github'
+        credentials_json: '${{ secrets.gcp_credentials }}'
 
     - id: 'deploy'
       uses: 'google-github-actions/deploy-cloud-functions@v4'

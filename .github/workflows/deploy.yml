@@ -126,6 +126,7 @@ jobs:
       aws-key-id: ${{ secrets.aws-key-id }}
       aws-secret-key: ${{ secrets.aws-secret-key }}
       build-secrets: ${{ secrets.build-secrets }}
+      gcp_credentials: ${{ secrets.gcp_credentials }}
 
   deploy-staging-aws:
     uses: ./.github/workflows/lambda_deploy.yml
@@ -170,6 +171,7 @@ jobs:
       region: europe-west2
     secrets:
       function-admin-api-key: ${{ secrets.function-admin-api-key }}
+      gcp_credentials: ${{ secrets.gcp_credentials }}
 
   deploy-gcp-production:
     uses: ./.github/workflows/gcp_deploy.yml
@@ -183,3 +185,4 @@ jobs:
       region: europe-west2
     secrets:
       function-admin-api-key: ${{ secrets.function-admin-api-key }}
+      gcp_credentials: ${{ secrets.gcp_credentials }}
