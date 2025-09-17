@@ -41,15 +41,10 @@ jobs:
     steps:
     - uses: 'actions/checkout@v4'
 
-    - name: Debug OIDC token
-      run: |
-        echo "${ACTIONS_ID_TOKEN_REQUEST_URL}"
-        echo "${ACTIONS_ID_TOKEN_REQUEST_TOKEN}"
-
     - id: 'auth'
       uses: 'google-github-actions/auth@v3'
       with:
-        service_account: github-actions-sa@wolfram-evaluation-functions.iam.gserviceaccount.com'
+        project_id: 'wolfram-evaluation-functions'
         workload_identity_provider: 'projects/811110518139/locations/global/workloadIdentityPools/github/providers/github'
 
     - id: 'deploy'
