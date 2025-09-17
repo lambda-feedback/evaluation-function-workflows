@@ -1,0 +1,92 @@
+name: Build Evaluation Function to GCP
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        type: string
+        description: "The environment to deploy to"
+        required: true
+      region:
+        type: string
+        description: "The AWS region to deploy to"
+        default: "europe-west2"
+        required: false
+      function-name:
+        type: string
+        description: "The name of the Lambda function to deploy"
+        required: true
+      build-file:
+        type: string
+        description: "The path to the Dockerfile to build"
+        required: false
+        default: "Dockerfile"
+      build-context:
+        type: string
+        description: "The context to use for the Docker build"
+        required: false
+        default: "."
+      build-target:
+        type: string
+        description: "The target stage of the image to build"
+        required: false
+      build-args:
+        type: string
+        description: "The build arguments to pass to the Docker build"
+        required: false
+      build-push:
+        type: boolean
+        description: "Whether to push the image to the registry"
+        required: false
+        default: true
+      build-platforms:
+        type: string
+        description: "The platforms to build the image for"
+        required: false
+      repo:
+        type: string
+        description: "The image repo"
+        required: true
+    secrets:
+      function-admin-api-key:
+        description: "The API key for the Lambda Feedback function admin API"
+        required: false
+      gcp_credentials:
+        description: "The JSON key for deploying to GCP"
+        required: true
+    outputs:
+      registry:
+        description: "The registry where the image was pushed"
+        value: ${{ jobs.build.outputs.registry }}
+
+jobs:
+  build:
+    name: Build (${{ inputs.environment }})
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    outputs:
+      registry: ${{ steps.login-ecr.outputs.registry }}
+
+    steps:
+    - uses: 'actions/checkout@v4'
+
+    - id: 'auth'
+      uses: 'google-github-actions/auth@v3'
+      with:
+        credentials_json: '${{ secrets.gcp_credentials }}'
+
+    - name: Set up Google Cloud SDK
+      uses: google-github-actions/setup-gcloud@v1
+      with:
+            project_id: wolfram-evaluation-functions
+    - name: Configure Docker to use gcloud as a credential helper
+      run: |
+          gcloud auth configure-docker ${{ inputs.region }}docker.pkg.dev
+    - name: Build and Push Docker image
+      run: |
+        IMAGE_URI="${{ inputs.region }}-docker.pkg.dev/wolfram-evaluation-function/evaluation-function/${{inputs.function-name}}:latest"
+        docker build -t "$IMAGE_URI" .
+        docker push "$IMAGE_URI"

@@ -60,4 +60,5 @@ jobs:
         name: '${{ inputs.function-name }}'
         runtime: 'nodejs22'
         region: '${{ inputs.region }}'
+        docker_registry: artifactregistry
         docker_repository: '${{ inputs.repo }}'

@@ -160,26 +160,28 @@ jobs:
       aws-secret-key: ${{ secrets.aws-secret-key }}
       function-admin-api-key: ${{ secrets.function-admin-api-key }}
 
-
-  # deploy-gcp-staging:
-  #   uses: ./.github/workflows/gcp_deploy.yml
-  #   if: inputs.build-platforms == 'gcp' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref_name == github.event.repository.default_branch))
-  #   needs: [setup]
-  #   with:
-  #     environment: staging
-  #     api-url: https://staging-api.lambdafeedback.com
-  #     repo: projects/wolfram-evaluation-functions/locations/europe-west2/repositories/evaluation-function-staging
-  #     image-name: europe-west2-docker.pkg.dev/wolfram-evaluation-functions/evaluation-function-staging:${{ needs.setup.outputs.evaluation_function_name }}
-  #     function-name: ${{ needs.setup.outputs.evaluation_function_name }}
-  #     region: europe-west2
-  #   secrets:
-  #     function-admin-api-key: ${{ secrets.function-admin-api-key }}
-  #     gcp_credentials: ${{ secrets.gcp_credentials }}
+  build-gcp:
+    uses: ./.github/workflows/gcp_deploy.yml
+    if: inputs.build-platforms == 'gcp'
+    needs: setup
+    with:
+      environment: ${{ matrix.environment }}
+      function-name: ${{ needs.setup.outputs.evaluation_function_name }}
+      region: ${{ inputs.region }}
+      build-file: ${{ inputs.build-file }}
+      build-context: ${{ inputs.build-context }}
+      build-target: ${{ inputs.build-target }}
+      build-args: ${{ inputs.build-args }}
+      build-platforms: ${{ inputs.build-platforms }}
+      build-push: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref_name == github.event.repository.default_branch) }}
+    secrets:
+      function-admin-api-key: ${{ secrets.function-admin-api-key }}
+      gcp_credentials: ${{ secrets.gcp_credentials }}
 
   deploy-gcp-production:
     uses: ./.github/workflows/gcp_deploy.yml
     if: inputs.build-platforms == 'gcp' && github.repository != inputs.template-repository-name && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref_name == github.event.repository.default_branch))
-    needs: [setup]
+    needs: [setup, build-gcp]
     with:
       environment: production
       api-url: https://prod-api.lambdafeedback.com
