@@ -53,4 +53,5 @@ jobs:
       with:
         name: '${{ inputs.function-name }}'
         runtime: 'nodejs22'
+        region: '${{ inputs.region }}'
         docker_repository: 'europe-west2-docker.pkg.dev/wolfram-evaluation-functions/evaluation-function'
