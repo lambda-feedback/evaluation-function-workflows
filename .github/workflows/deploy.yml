@@ -129,7 +129,6 @@ jobs:
       aws-key-id: ${{ secrets.aws-key-id }}
       aws-secret-key: ${{ secrets.aws-secret-key }}
       build-secrets: ${{ secrets.build-secrets }}
-      gcp_credentials: ${{ secrets.gcp_credentials }}
 
   deploy-staging-aws:
     uses: ./.github/workflows/lambda_deploy.yml
