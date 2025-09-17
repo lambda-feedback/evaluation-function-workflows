@@ -167,7 +167,7 @@ jobs:
       api-url: https://staging-api.lambdafeedback.com
       image-name: europe-west2-docker.pkg.dev/wolfram-evaluation-functions/evaluation-function-staging:${{ needs.setup.outputs.evaluation_function_name }}
       function-name: ${{ needs.setup.outputs.evaluation_function_name }}
-      region: eu-west2
+      region: europe-west2
     secrets:
       function-admin-api-key: ${{ secrets.function-admin-api-key }}
 
@@ -180,6 +180,6 @@ jobs:
       api-url: https://prod-api.lambdafeedback.com
       image-name: europe-west2-docker.pkg.dev/wolfram-evaluation-functions/evaluation-function:${{ needs.setup.outputs.evaluation_function_name }}
       function-name: ${{ needs.setup.outputs.evaluation_function_name }}
-      region: eu-west2
+      region: europe-west2
     secrets:
       function-admin-api-key: ${{ secrets.function-admin-api-key }}
