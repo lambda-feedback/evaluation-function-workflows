@@ -33,7 +33,8 @@ on:
       build-platforms:
         type: string
         description: "The platforms to build the image for"
-        required: false
+        default: "aws"
+        required: true
     secrets:
       aws-key-id:
         description: "The AWS access key ID"
@@ -87,9 +88,25 @@ jobs:
           functionName="${{fromJson(steps.config.outputs.config).EvaluationFunctionName}}"
           if [[ -z "$functionName" ]]; then echo "Set EvaluationFunctionName in config.json"; exit 1; fi
           echo "name=$functionName" >> "$GITHUB_OUTPUT"
+      - name: Validate AWS secrets for AWS platform
+        if: inputs.build-platforms == 'aws'
+        run: |
+          if [[ -z "${{ secrets.aws-key-id }}" ]]; then
+            echo "Error: aws-key-id secret is required when build-platforms is 'aws'"
+            exit 1
+          fi
+          if [[ -z "${{ secrets.aws-secret-key }}" ]]; then
+            echo "Error: aws-secret-key secret is required when build-platforms is 'aws'"
+            exit 1
+          fi
+          if [[ -z "${{ secrets.function-admin-api-key }}" ]]; then
+            echo "Error: function-admin-api-key secret is required when build-platforms is 'aws'"
+            exit 1
+          fi
 
-  build:
+  build-aws:
     uses: ./.github/workflows/lambda_build.yml
+    if: inputs.build-platforms == 'aws'
     needs: setup
     strategy:
       fail-fast: false
@@ -110,10 +127,10 @@ jobs:
       aws-secret-key: ${{ secrets.aws-secret-key }}
       build-secrets: ${{ secrets.build-secrets }}
 
-  deploy-staging:
+  deploy-staging-aws:
     uses: ./.github/workflows/lambda_deploy.yml
-    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref_name == github.event.repository.default_branch)
-    needs: [setup, build]
+    if: inputs.build-platforms == 'aws' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref_name == github.event.repository.default_branch))
+    needs: [setup, build-aws]
     with:
       environment: staging
       api-url: https://staging-api.lambdafeedback.com
@@ -125,10 +142,10 @@ jobs:
       aws-secret-key: ${{ secrets.aws-secret-key }}
       function-admin-api-key: ${{ secrets.function-admin-api-key }}
 
-  deploy-production:
+  deploy-production-aws:
     uses: ./.github/workflows/lambda_deploy.yml
-    if: github.repository != inputs.template-repository-name && github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref_name == github.event.repository.default_branch)
-    needs: [setup, build]
+    if: inputs.build-platforms == 'aws' && (github.repository != inputs.template-repository-name && github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref_name == github.event.repository.default_branch))
+    needs: [setup, build-aws]
     with:
       environment: production
       api-url: https://prod-api.lambdafeedback.com
@@ -138,4 +155,31 @@ jobs:
     secrets:
       aws-key-id: ${{ secrets.aws-key-id }}
       aws-secret-key: ${{ secrets.aws-secret-key }}
+      function-admin-api-key: ${{ secrets.function-admin-api-key }}
+
+
+  deploy-gcp-staging:
+    uses: ./.github/workflows/gcp_deploy.yml
+    if: inputs.build-platforms == 'gcp' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref_name == github.event.repository.default_branch))
+    needs: [setup]
+    with:
+      environment: staging
+      api-url: https://staging-api.lambdafeedback.com
+      image-name: europe-west2-docker.pkg.dev/wolfram-evaluation-functions/evaluation-function-staging:${{ needs.setup.outputs.evaluation_function_name }}
+      function-name: ${{ needs.setup.outputs.evaluation_function_name }}
+      region: eu-west2
+    secrets:
+      function-admin-api-key: ${{ secrets.function-admin-api-key }}
+
+  deploy-gcp-production:
+    uses: ./.github/workflows/gcp_deploy.yml
+    if: inputs.build-platforms == 'gcp' && github.repository != inputs.template-repository-name && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref_name == github.event.repository.default_branch))
+    needs: [setup]
+    with:
+      environment: production
+      api-url: https://prod-api.lambdafeedback.com
+      image-name: europe-west2-docker.pkg.dev/wolfram-evaluation-functions/evaluation-function:${{ needs.setup.outputs.evaluation_function_name }}
+      function-name: ${{ needs.setup.outputs.evaluation_function_name }}
+      region: eu-west2
+    secrets:
       function-admin-api-key: ${{ secrets.function-admin-api-key }}
