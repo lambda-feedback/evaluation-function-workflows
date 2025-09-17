@@ -161,7 +161,7 @@ jobs:
       function-admin-api-key: ${{ secrets.function-admin-api-key }}
 
   build-gcp:
-    uses: ./.github/workflows/gcp_deploy.yml
+    uses: ./.github/workflows/gcp_build.yml
     if: inputs.build-platforms == 'gcp'
     needs: setup
     with:
