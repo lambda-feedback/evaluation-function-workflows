@@ -24,6 +24,10 @@ on:
         description: "The GCP region to deploy to"
         default: "europe-west2"
         required: false
+      repo:
+        type: string
+        description: "The image repo"
+        required: true
     secrets:
       function-admin-api-key:
         description: "The API key for the Lambda Feedback function admin API"
@@ -56,4 +60,4 @@ jobs:
         name: '${{ inputs.function-name }}'
         runtime: 'nodejs22'
         region: '${{ inputs.region }}'
-        docker_repository: 'europe-west2-docker.pkg.dev/wolfram-evaluation-functions/evaluation-function'
+        docker_repository: '${{ inputs.repo }}'
