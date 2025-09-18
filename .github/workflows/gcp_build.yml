@@ -64,7 +64,7 @@ jobs:
       packages: write
       id-token: write
     outputs:
-      registry: ${{ steps.login-ecr.outputs.registry }}
+      registry: europe-west2-docker.pkg.dev/wolfram-evaluation-functions/evaluation-function/${{inputs.function-name}}:latest
 
     steps:
     - uses: 'actions/checkout@v4'
@@ -82,6 +82,7 @@ jobs:
       run: |
           gcloud auth configure-docker ${{ inputs.region }}docker.pkg.dev
     - name: Build and Push Docker image
+      id: 'build-push'
       run: |
     
         IMAGE_URI="europe-west2-docker.pkg.dev/wolfram-evaluation-functions/evaluation-function/${{inputs.function-name}}:latest"

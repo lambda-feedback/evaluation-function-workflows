@@ -164,7 +164,6 @@ jobs:
     if: inputs.build-platforms == 'gcp'
     needs: setup
     with:
-      environment: ${{ matrix.environment }}
       function-name: ${{ needs.setup.outputs.evaluation_function_name }}
       region: ${{ inputs.region }}
       build-file: ${{ inputs.build-file }}
