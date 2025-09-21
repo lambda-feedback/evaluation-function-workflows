@@ -49,7 +49,7 @@ on:
         required: false
       gcp_credentials:
         description: "The JSON key for deploying to GCP"
-        required: true
+        required: false
 
 jobs:
   setup:
