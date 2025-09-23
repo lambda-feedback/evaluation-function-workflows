@@ -55,10 +55,7 @@ jobs:
 
     - id: 'deploy'
       run: |
-        gcloud functions deploy ${{ inputs.function-name }} \
-          --region=${{ inputs.region }}
-          --runtime=custom \
-          --trigger-http \
-          --allow-unauthenticated
-          --source=.
-          --image=${{inputs.repo}}/${{inputs.function-name}}
+        gcloud run deploy ${{inputs.function-name}} \
+          --image ${{inputs.repo}}/${{inputs.function-name}} \
+          --region ${{inputs.region}} \
+          --platform managed
