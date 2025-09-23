@@ -163,7 +163,12 @@ jobs:
     uses: ./.github/workflows/gcp_build.yml
     if: inputs.build-platforms == 'gcp'
     needs: setup
+    strategy:
+      fail-fast: false
+      matrix:
+        environment: [staging, production]
     with:
+      environment: ${{ matrix.environment }}
       function-name: ${{ needs.setup.outputs.evaluation_function_name }}
       region: ${{ inputs.region }}
       build-file: ${{ inputs.build-file }}

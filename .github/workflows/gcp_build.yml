@@ -57,14 +57,14 @@ on:
 
 jobs:
   build:
-    name: Build GCP
+    name: Build GCP (${{ inputs.environment }})
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
       id-token: write
     outputs:
-      registry: europe-west2-docker.pkg.dev/wolfram-evaluation-functions/evaluation-function/${{inputs.function-name}}:latest
+      registry: europe-west2-docker.pkg.dev/wolfram-evaluation-functions/${{ inputs.environment == 'staging' && 'evaluation-function-staging' || 'evaluation-function' }}/${{inputs.function-name}}:latest
 
     steps:
     - uses: 'actions/checkout@v4'
@@ -84,6 +84,6 @@ jobs:
       id: 'build-push'
       run: |
     
-        IMAGE_URI="europe-west2-docker.pkg.dev/wolfram-evaluation-functions/evaluation-function/${{inputs.function-name}}:latest"
+        IMAGE_URI="europe-west2-docker.pkg.dev/wolfram-evaluation-functions/${{ inputs.environment == 'staging' && 'evaluation-function-staging' || 'evaluation-function' }}/${{inputs.function-name}}:latest"
         docker build -t "$IMAGE_URI" .
         docker push "$IMAGE_URI"
