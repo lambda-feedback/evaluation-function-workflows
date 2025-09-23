@@ -59,3 +59,4 @@ jobs:
           --image ${{inputs.repo}}/${{inputs.image-name}} \
           --region ${{inputs.region}} \
           --platform managed
+          --allow-unauthenticated
