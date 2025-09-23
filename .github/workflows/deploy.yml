@@ -181,6 +181,21 @@ jobs:
       function-admin-api-key: ${{ secrets.function-admin-api-key }}
       gcp_credentials: ${{ secrets.gcp_credentials }}
 
+  deploy-gcp-staging:
+    uses: ./.github/workflows/gcp_deploy.yml
+    if: inputs.build-platforms == 'gcp' && github.repository != inputs.template-repository-name && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref_name == github.event.repository.default_branch))
+    needs: [setup, build-gcp]
+    with:
+      environment: staging
+      api-url: https://prod-api.lambdafeedback.com
+      repo: europe-west2-docker.pkg.dev/wolfram-evaluation-functions/evaluation-function-staging
+      image-name: ${{ needs.setup.outputs.evaluation_function_name }}
+      function-name: ${{ needs.setup.outputs.evaluation_function_name }}
+      region: europe-west2
+    secrets:
+      function-admin-api-key: ${{ secrets.function-admin-api-key }}
+      gcp_credentials: ${{ secrets.gcp_credentials }}
+
   deploy-gcp-production:
     uses: ./.github/workflows/gcp_deploy.yml
     if: inputs.build-platforms == 'gcp' && github.repository != inputs.template-repository-name && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref_name == github.event.repository.default_branch))
