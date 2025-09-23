@@ -188,7 +188,7 @@ jobs:
     with:
       environment: production
       api-url: https://prod-api.lambdafeedback.com
-      repo: projects/wolfram-evaluation-functions/locations/europe-west2/repositories/evaluation-function
+      repo: europe-west2-docker.pkg.dev/wolfram-evaluation-functions/evaluation-function
       image-name: ${{ needs.setup.outputs.evaluation_function_name }}
       function-name: ${{ needs.setup.outputs.evaluation_function_name }}
       region: europe-west2
