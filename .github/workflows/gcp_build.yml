@@ -57,7 +57,7 @@ on:
 
 jobs:
   build:
-    name: Build (${{ inputs.environment }})
+    name: Build GCP
     runs-on: ubuntu-latest
     permissions:
       contents: read
