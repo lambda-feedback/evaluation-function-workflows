@@ -54,11 +54,10 @@ jobs:
         credentials_json: '${{ secrets.gcp_credentials }}'
 
     - id: 'deploy'
-      uses: 'google-github-actions/deploy-cloud-functions@v4'
-      timeout-minutes: 10
-      with:
-        name: '${{ inputs.function-name }}'
-        runtime: 'nodejs22'
-        region: '${{ inputs.region }}'
-        docker_registry: artifactregistry
-        docker_repository: '${{ inputs.repo }}'
+      run: |
+        gcloud functions deploy ${{ inputs.function-name }} \
+          --region=${{ inputs.region }}
+          --runtime=custom \
+          --trigger-http \
+          --allow-unauthenticated
+          --source=${{ inputs.repo }}
