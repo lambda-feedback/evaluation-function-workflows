@@ -190,7 +190,7 @@ jobs:
       api-url: https://prod-api.lambdafeedback.com
       repo: europe-west2-docker.pkg.dev/wolfram-evaluation-functions/evaluation-function-staging
       image-name: ${{ needs.setup.outputs.evaluation_function_name }}
-      function-name: ${{ needs.setup.outputs.evaluation_function_name }}
+      function-name: ${{ needs.setup.outputs.evaluation_function_name }}-staging
       region: europe-west2
     secrets:
       function-admin-api-key: ${{ secrets.function-admin-api-key }}
