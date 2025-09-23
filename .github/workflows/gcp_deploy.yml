@@ -60,4 +60,4 @@ jobs:
           --runtime=custom \
           --trigger-http \
           --allow-unauthenticated
-          --source=${{ inputs.repo }}
+          --source=.
