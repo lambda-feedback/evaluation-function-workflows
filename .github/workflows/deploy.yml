@@ -95,9 +95,9 @@ jobs:
         uses: Entepotenz/change-string-case-action-min-dependencies@v1
         with:
           string: ${{ steps.evaluation_function_name.outputs.name }}
-      - name:
+      - name: Normalize function name
         id: normalize-function-name
-        run: echo name=${{steps.setup-normalize-function-name.outputs.dashnormalised}} >> $"GITHUB_OUTPUT"
+        run: echo name=${{steps.setup-normalize-function-name.outputs.lowercase}} >> $"GITHUB_OUTPUT"
       - name: Validate AWS secrets for AWS platform
         if: inputs.build-platforms == 'aws'
         run: |
