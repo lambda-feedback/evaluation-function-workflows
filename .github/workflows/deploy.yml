@@ -56,7 +56,7 @@ jobs:
     name: Setup
     runs-on: ubuntu-latest
     outputs:
-      evaluation_function_name: ${{ steps.evaluation_function_name.outputs.name }}
+      evaluation_function_name: ${{ steps.normalize-function-name.outputs.name }}
     permissions:
       contents: read
       packages: write
@@ -90,6 +90,14 @@ jobs:
           functionName="${{fromJson(steps.config.outputs.config).EvaluationFunctionName}}"
           if [[ -z "$functionName" ]]; then echo "Set EvaluationFunctionName in config.json"; exit 1; fi
           echo "name=$functionName" >> "$GITHUB_OUTPUT"
+      - name: Setup normalize function name
+        id: setup-normalize-function-name
+        uses: Entepotenz/change-string-case-action-min-dependencies@v1
+        with:
+          string: ${{ steps.evaluation_function_name.outputs.name }}
+      - name:
+        id: normalize-function-name
+        run: echo name=${{steps.setup-normalize-function-name.outputs.dashnormalised}} >> $"GITHUB_OUTPUT"
       - name: Validate AWS secrets for AWS platform
         if: inputs.build-platforms == 'aws'
         run: |
