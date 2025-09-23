@@ -61,3 +61,4 @@ jobs:
           --trigger-http \
           --allow-unauthenticated
           --source=.
+          --image=${{inputs.repo}}/${{inputs.function-name}}
