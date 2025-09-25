@@ -33,7 +33,7 @@ on:
         type: string
         description: "The platforms to build the image for"
         default: "aws"
-        required: true
+        required: false
     secrets:
       aws-key-id:
         description: "The AWS access key ID"
