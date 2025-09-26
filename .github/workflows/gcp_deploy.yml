@@ -58,5 +58,5 @@ jobs:
         gcloud run deploy ${{inputs.function-name}} \
           --image ${{inputs.repo}}/${{inputs.image-name}} \
           --region ${{inputs.region}} \
-          --platform managed
+          --platform managed \
           --allow-unauthenticated
