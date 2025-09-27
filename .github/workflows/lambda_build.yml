@@ -118,6 +118,5 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max,ignore-error=true
-          platforms: ${{ inputs.build-platforms }}
           build-args: ${{ inputs.build-args }}
           secrets: ${{ secrets.build-secrets }}
