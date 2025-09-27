@@ -57,6 +57,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       evaluation_function_name: ${{ steps.normalize-function-name.outputs.name }}
+      region: ${{ steps.set-region.outputs.region }}
     permissions:
       contents: read
       packages: write
@@ -98,6 +99,20 @@ jobs:
       - name: Normalize function name
         id: normalize-function-name
         run: echo name=${{steps.setup-normalize-function-name.outputs.lowercase}} >> $GITHUB_OUTPUT
+      - name: Set default region based on platform
+        id: set-region
+        run: |
+          if [[ -n "${{ inputs.region }}" ]]; then
+            # Use provided region
+            region="${{ inputs.region }}"
+          elif [[ "${{ inputs.build-platforms }}" == "aws" ]]; then
+            # Default AWS region
+            region="eu-west-2"
+          else
+            # Default GCP region (or other platforms)
+            region="europe-west2"
+          fi
+          echo "region=$region" >> "$GITHUB_OUTPUT"
       - name: Validate AWS secrets for AWS platform
         if: inputs.build-platforms == 'aws'
         run: |
@@ -125,7 +140,7 @@ jobs:
     with:
       environment: ${{ matrix.environment }}
       function-name: ${{ needs.setup.outputs.evaluation_function_name }}
-      region: ${{ inputs.region }}
+      region:  ${{ needs.setup.outputs.region }}
       build-file: ${{ inputs.build-file }}
       build-context: ${{ inputs.build-context }}
       build-target: ${{ inputs.build-target }}
@@ -161,7 +176,7 @@ jobs:
       api-url: https://prod-api.lambdafeedback.com
       image-name: ${{ needs.build.outputs.registry }}/lambda-feedback-production-functions-repository:${{ needs.setup.outputs.evaluation_function_name }}
       function-name: ${{ needs.setup.outputs.evaluation_function_name }}
-      region: ${{ inputs.region }}
+      region:  ${{ needs.setup.outputs.region }}
     secrets:
       aws-key-id: ${{ secrets.aws-key-id }}
       aws-secret-key: ${{ secrets.aws-secret-key }}
@@ -178,7 +193,7 @@ jobs:
     with:
       environment: ${{ matrix.environment }}
       function-name: ${{ needs.setup.outputs.evaluation_function_name }}
-      region: ${{ inputs.region }}
+      region:  ${{ needs.setup.outputs.region }}
       build-file: ${{ inputs.build-file }}
       build-context: ${{ inputs.build-context }}
       build-target: ${{ inputs.build-target }}
@@ -196,10 +211,10 @@ jobs:
     with:
       environment: staging
       api-url: https://prod-api.lambdafeedback.com
-      repo: europe-west2-docker.pkg.dev/wolfram-evaluation-functions/evaluation-function-staging
+      repo:  ${{ needs.setup.outputs.region }}-docker.pkg.dev/wolfram-evaluation-functions/evaluation-function-staging
       image-name: ${{ needs.setup.outputs.evaluation_function_name }}
       function-name: ${{ needs.setup.outputs.evaluation_function_name }}-staging
-      region: europe-west2
+      region: ${{ needs.setup.outputs.region }}
     secrets:
       function-admin-api-key: ${{ secrets.function-admin-api-key }}
       gcp_credentials: ${{ secrets.gcp_credentials }}
@@ -211,10 +226,10 @@ jobs:
     with:
       environment: production
       api-url: https://prod-api.lambdafeedback.com
-      repo: europe-west2-docker.pkg.dev/wolfram-evaluation-functions/evaluation-function
+      repo:  ${{ needs.setup.outputs.region }}-docker.pkg.dev/wolfram-evaluation-functions/evaluation-function
       image-name: ${{ needs.setup.outputs.evaluation_function_name }}
       function-name: ${{ needs.setup.outputs.evaluation_function_name }}
-      region: europe-west2
+      region:  ${{ needs.setup.outputs.region }}
     secrets:
       function-admin-api-key: ${{ secrets.function-admin-api-key }}
       gcp_credentials: ${{ secrets.gcp_credentials }}
