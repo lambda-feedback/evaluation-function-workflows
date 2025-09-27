@@ -161,7 +161,7 @@ jobs:
       api-url: https://staging-api.lambdafeedback.com
       image-name: ${{ needs.build.outputs.registry }}/lambda-feedback-staging-functions-repository:${{ needs.setup.outputs.evaluation_function_name }}
       function-name: ${{ needs.setup.outputs.evaluation_function_name }}
-      region: ${{ inputs.region }}
+      region: ${{ needs.setup.outputs.region }}
     secrets:
       aws-key-id: ${{ secrets.aws-key-id }}
       aws-secret-key: ${{ secrets.aws-secret-key }}
