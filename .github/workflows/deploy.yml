@@ -129,12 +129,6 @@ jobs:
             exit 1
           fi
 
-  workflow-telemetry-action:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Collect Workflow Telemetry
-        uses: catchpoint/workflow-telemetry-action@v2
-        
   build-aws:
     uses: ./.github/workflows/lambda_build.yml
     if: inputs.build-platforms == 'aws'
