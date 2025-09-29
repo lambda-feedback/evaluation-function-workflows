@@ -159,7 +159,7 @@ jobs:
     with:
       environment: staging
       api-url: https://staging-api.lambdafeedback.com
-      image-name: ${{ needs.build.outputs.registry }}/lambda-feedback-staging-functions-repository:${{ needs.setup.outputs.evaluation_function_name }}
+      image-name: ${{ needs.build-aws.outputs.registry }}/lambda-feedback-staging-functions-repository:${{ needs.setup.outputs.evaluation_function_name }}
       function-name: ${{ needs.setup.outputs.evaluation_function_name }}
       region: ${{ needs.setup.outputs.region }}
     secrets:
@@ -174,7 +174,7 @@ jobs:
     with:
       environment: production
       api-url: https://prod-api.lambdafeedback.com
-      image-name: ${{ needs.build.outputs.registry }}/lambda-feedback-production-functions-repository:${{ needs.setup.outputs.evaluation_function_name }}
+      image-name: ${{ needs.build-aws.outputs.registry }}/lambda-feedback-production-functions-repository:${{ needs.setup.outputs.evaluation_function_name }}
       function-name: ${{ needs.setup.outputs.evaluation_function_name }}
       region:  ${{ needs.setup.outputs.region }}
     secrets:
