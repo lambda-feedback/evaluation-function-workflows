@@ -49,14 +49,24 @@ jobs:
     - uses: 'actions/checkout@v4'
 
     - id: 'auth'
+      name: "Login to GCP"
       uses: 'google-github-actions/auth@v3'
       with:
         credentials_json: '${{ secrets.gcp_credentials }}'
 
     - id: 'deploy'
+      name: "Deploy to GCP"
       run: |
         gcloud run deploy ${{inputs.function-name}} \
           --image ${{inputs.repo}}/${{inputs.image-name}} \
           --region ${{inputs.region}} \
           --platform managed \
           --allow-unauthenticated
+    - id: 'make-public'
+      name: "Make function public"
+      run: |
+        gcloud run services add-iam-policy-binding ${{inputs.function-name}} \
+          --member="allUsers" \
+          --role="roles/run.invoker" \
+          --region ${{ inputs.region }} \
+          --platform managed
