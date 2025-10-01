@@ -7,6 +7,11 @@ on:
         type: string
         description: "The name of the repository where the template is located"
         required: true
+      environment:
+        type: string
+        description: "Deploy to staging or production"
+        required: true
+        default: staging
       region:
         type: string
         description: "The AWS region to deploy to"
@@ -34,6 +39,16 @@ on:
         description: "The platforms to build the image for"
         default: "aws"
         required: false
+      version-bump:
+        type: string
+        description: "Used for prod: The version number to bump (major, minor or patch)"
+        required: false
+        default: "patch"
+      branch:
+        type: string
+        description: "Used for prod: The branch to deploy"
+        required: false
+        default: "main"
     secrets:
       aws-key-id:
         description: "The AWS access key ID"
@@ -131,6 +146,7 @@ jobs:
 
 
   deploy-staging:
+    if: ${{inputs.environment == 'staging'}}
     uses: ./.github/workflows/staging_deploy.yml
     needs: setup
     with:
@@ -142,6 +158,28 @@ jobs:
       build-target: ${{ inputs.build-target }}
       build-args: ${{inputs.build-args}}
       build-platforms: ${{inputs.build-platforms}}
+    secrets:
+      aws-key-id: ${{ secrets.aws-key-id }}
+      aws-secret-key: ${{ secrets.aws-secret-key }}
+      function-admin-api-key: ${{ secrets.function-admin-api-key }}
+      build-secrets: ${{ secrets.build-secrets }}
+      gcp_credentials: ${{ secrets.gcp_credentials }}
+
+  deploy-production:
+    if: ${{inputs.environment == 'production'}}
+    uses: ./.github/workflows/production_deploy.yml
+    needs: setup
+    with:
+      evaluation_function_name: ${{ needs.setup.outputs.evaluation_function_name }}
+      template-repository-name: ${{ inputs.template-repository-name }}
+      region: ${{ needs.setup.outputs.region }}
+      build-file: ${{ inputs.build-file }}
+      build-context: ${{ inputs.build-context }}
+      build-target: ${{ inputs.build-target }}
+      build-args: ${{inputs.build-args}}
+      build-platforms: ${{inputs.build-platforms}}
+      version-bump: ${{inputs.version-bump}}
+      branch: ${{inputs.branch}}
     secrets:
       aws-key-id: ${{ secrets.aws-key-id }}
       aws-secret-key: ${{ secrets.aws-secret-key }}

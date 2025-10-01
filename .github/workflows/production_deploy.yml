@@ -1,0 +1,285 @@
+name: Release and Deploy Evaluation Function
+
+on:
+  workflow_call:
+    inputs:
+      version-bump:
+        description: 'Version bump type'
+        required: true
+        type: string
+        default: patch
+      evaluation_function_name:
+        type: string
+        description: "The name of the evaluation function to deploy."
+        required: true
+      template-repository-name:
+        type: string
+        description: "The name of the repository where the template is located"
+        required: true
+      region:
+        type: string
+        description: "The AWS region to deploy to"
+        required: false
+      build-file:
+        type: string
+        description: "The path to the Dockerfile to build"
+        required: false
+        default: "Dockerfile"
+      build-context:
+        type: string
+        description: "The context to use for the Docker build"
+        required: false
+        default: "."
+      build-target:
+        type: string
+        description: "The target stage of the image to build"
+        required: false
+      build-args:
+        type: string
+        description: "The build arguments to pass to the Docker build"
+        required: false
+      build-platforms:
+        type: string
+        description: "The platforms to build the image for"
+        default: "aws"
+        required: false
+      branch:
+        description: 'Branch to release from'
+        type: string
+        required: true
+        default: 'main'
+    secrets:
+      aws-key-id:
+        description: "The AWS access key ID"
+        required: true
+      aws-secret-key:
+        description: "The AWS secret access key"
+        required: true
+      function-admin-api-key:
+        description: "The API key for the Lambda Feedback function admin API"
+        required: true
+      build-secrets:
+        description: "The Docker secrets to use for the build"
+        required: false
+      gcp_credentials:
+        description: "The JSON key for deploying to GCP"
+        required: false
+
+jobs:
+  checkout:
+    name: Checkout Code
+    runs-on: ubuntu-latest
+    outputs:
+      branch: ${{ steps.set-branch.outputs.branch }}
+    steps:
+      - name: Set branch
+        id: set-branch
+        run: |
+          echo "branch=${{ inputs.branch }}" >> $GITHUB_OUTPUT
+      
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch }}
+          fetch-depth: 0
+
+  version:
+    name: Determine Version
+    runs-on: ubuntu-latest
+    needs: checkout
+    outputs:
+      new-version: ${{ steps.determine-version.outputs.new-version }}
+      version-tag: ${{ steps.determine-version.outputs.version-tag }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.checkout.outputs.branch }}
+          fetch-depth: 0
+
+      - name: Get latest tag
+        id: get-latest-tag
+        run: |
+          # Get the latest semver tag
+          latest_tag=$(git tag -l "v*.*.*" | sort -V | tail -n 1)
+          if [[ -z "$latest_tag" ]]; then
+            latest_tag="v0.0.0"
+          fi
+          echo "latest-tag=$latest_tag" >> $GITHUB_OUTPUT
+          echo "Latest tag: $latest_tag"
+
+      - name: Determine version bump
+        id: determine-version
+        run: |
+          latest_tag="${{ steps.get-latest-tag.outputs.latest-tag }}"
+          version="${latest_tag#v}"
+          
+          IFS='.' read -r major minor patch <<< "$version"
+          
+          # Get bump type from workflow input
+          bump_type="${{ inputs.version-bump }}"
+          
+          # Calculate new version
+          case "$bump_type" in
+            major)
+              major=$((major + 1))
+              minor=0
+              patch=0
+              ;;
+            minor)
+              minor=$((minor + 1))
+              patch=0
+              ;;
+            patch)
+              patch=$((patch + 1))
+              ;;
+          esac
+          
+          # Get short commit SHA
+          commit_sha=$(git rev-parse --short HEAD)
+          
+          # Create version string with build metadata (SemVer 2.0.0)
+          new_version="${major}.${minor}.${patch}+${commit_sha}"
+          version_tag="v${major}.${minor}.${patch}"
+          
+          echo "new-version=$new_version" >> $GITHUB_OUTPUT
+          echo "version-tag=$version_tag" >> $GITHUB_OUTPUT
+          echo "New version: $new_version"
+          echo "Version tag: $version_tag"
+
+  tag:
+    name: Create Git Tag
+    runs-on: ubuntu-latest
+    needs: [checkout, version]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.checkout.outputs.branch }}
+          fetch-depth: 0
+
+      - name: Create and push tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          tag="${{ needs.version.outputs.version-tag }}"
+          
+          # Check if tag already exists
+          if git rev-parse "$tag" >/dev/null 2>&1; then
+            echo "Tag $tag already exists"
+            exit 1
+          fi
+          
+          git tag -a "$tag" -m "Release ${{ needs.version.outputs.new-version }}"
+          git push origin "$tag"
+          echo "Created and pushed tag: $tag"
+
+  release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: [version, tag]
+    permissions:
+      contents: write
+    outputs:
+      release-id: ${{ steps.create-release.outputs.id }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create GitHub Release
+        id: create-release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ needs.version.outputs.version-tag }}
+          release_name: Release ${{ needs.version.outputs.new-version }}
+          body: |
+            ## Release ${{ needs.version.outputs.new-version }}
+            
+            **Full version:** `${{ needs.version.outputs.new-version }}`
+            **Trigger:** Manual deployment
+            **Branch:** `${{ inputs.branch }}`
+            
+            ### Changes
+            This release includes all changes up to commit `${{ github.sha }}`.
+            
+            See the [full changelog](https://github.com/${{ github.repository }}/compare/${{ needs.version.outputs.version-tag }}...HEAD) for details.
+          draft: false
+          prerelease: false
+
+      - name: Generate release notes
+        run: |
+          echo "Release created: ${{ steps.create-release.outputs.html_url }}"
+
+  build-aws:
+    uses: ./.github/workflows/lambda_build.yml
+    if: inputs.build-platforms == 'aws'
+    strategy:
+      fail-fast: false
+    with:
+      environment: staging
+      function-name: ${{ inputs.evaluation_function_name }}
+      region:  ${{ inputs.region }}
+      build-file: ${{ inputs.build-file }}
+      build-context: ${{ inputs.build-context }}
+      build-target: ${{ inputs.build-target }}
+      build-args: ${{ inputs.build-args }}
+      build-platforms: ${{ inputs.build-platforms }}
+      build-push: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref_name == github.event.repository.default_branch) }}
+    secrets:
+      aws-key-id: ${{ secrets.aws-key-id }}
+      aws-secret-key: ${{ secrets.aws-secret-key }}
+      build-secrets: ${{ secrets.build-secrets }}
+
+  deploy-production-aws:
+    uses: ./.github/workflows/lambda_deploy.yml
+    if: inputs.build-platforms == 'aws' && (github.repository != inputs.template-repository-name && github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref_name == github.event.repository.default_branch))
+    needs: build-aws
+    with:
+      environment: production
+      api-url: https://prod-api.lambdafeedback.com
+      image-name: ${{ needs.build-aws.outputs.registry }}/lambda-feedback-production-functions-repository:${{ inputs.evaluation_function_name }}
+      function-name: ${{ inputs.evaluation_function_name }}
+      region:  ${{ inputs.region }}
+    secrets:
+      aws-key-id: ${{ secrets.aws-key-id }}
+      aws-secret-key: ${{ secrets.aws-secret-key }}
+      function-admin-api-key: ${{ secrets.function-admin-api-key }}
+
+  build-gcp:
+    uses: ./.github/workflows/gcp_build.yml
+    if: inputs.build-platforms == 'gcp'
+    strategy:
+      fail-fast: false
+    with:
+      environment: staging
+      function-name: ${{ inputs.evaluation_function_name }}
+      region:  ${{ inputs.region }}
+      build-file: ${{ inputs.build-file }}
+      build-context: ${{ inputs.build-context }}
+      build-target: ${{ inputs.build-target }}
+      build-args: ${{ inputs.build-args }}
+      build-platforms: ${{ inputs.build-platforms }}
+      build-push: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref_name == github.event.repository.default_branch) }}
+    secrets:
+      function-admin-api-key: ${{ secrets.function-admin-api-key }}
+      gcp_credentials: ${{ secrets.gcp_credentials }}
+
+  deploy-gcp-production:
+    uses: ./.github/workflows/gcp_deploy.yml
+    if: inputs.build-platforms == 'gcp' && github.repository != inputs.template-repository-name && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref_name == github.event.repository.default_branch))
+    needs: build-gcp
+    with:
+      environment: production
+      api-url: https://prod-api.lambdafeedback.com
+      repo:  ${{ inputs.region }}-docker.pkg.dev/wolfram-evaluation-functions/evaluation-function
+      image-name: ${{ inputs.evaluation_function_name }}
+      function-name: ${{ inputs.evaluation_function_name }}
+      region:  ${{ inputs.region }}
+    secrets:
+      function-admin-api-key: ${{ secrets.function-admin-api-key }}
+      gcp_credentials: ${{ secrets.gcp_credentials }}
