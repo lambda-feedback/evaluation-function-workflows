@@ -43,6 +43,11 @@ on:
         type: string
         description: "The platforms to build the image for"
         required: false
+      clean-disk:
+        type: boolean
+        description: "When enabled this will run the disk clean up step"
+        required: false
+        default: false
     secrets:
       aws-key-id:
         description: "The AWS access key ID"
@@ -106,6 +111,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Free up disk space
+        if: ${{ inputs.clean-disk }}
         run: |
           echo "Available space before cleanup:"
           df -h
