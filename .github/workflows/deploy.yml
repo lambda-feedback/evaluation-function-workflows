@@ -129,107 +129,22 @@ jobs:
             exit 1
           fi
 
-  build-aws:
-    uses: ./.github/workflows/lambda_build.yml
-    if: inputs.build-platforms == 'aws'
+
+  deploy-staging:
+    uses: ./.github/workflows/staging_deploy.yml
     needs: setup
-    strategy:
-      fail-fast: false
-      matrix:
-        environment: [staging, production]
     with:
-      environment: ${{ matrix.environment }}
-      function-name: ${{ needs.setup.outputs.evaluation_function_name }}
-      region:  ${{ needs.setup.outputs.region }}
+      evaluation_function_name: ${{ needs.setup.outputs.evaluation_function_name }}
+      template-repository-name: ${{ inputs.template-repository-name }}
+      region: ${{ needs.setup.outputs.region }}
       build-file: ${{ inputs.build-file }}
       build-context: ${{ inputs.build-context }}
       build-target: ${{ inputs.build-target }}
-      build-args: ${{ inputs.build-args }}
-      build-platforms: ${{ inputs.build-platforms }}
-      build-push: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref_name == github.event.repository.default_branch) }}
+      build-args: ${{inputs.build-args}}
+      build-platforms: ${{inputs.build-platforms}}
     secrets:
       aws-key-id: ${{ secrets.aws-key-id }}
       aws-secret-key: ${{ secrets.aws-secret-key }}
+      function-admin-api-key: ${{ secrets.function-admin-api-key }}
       build-secrets: ${{ secrets.build-secrets }}
-
-  deploy-staging-aws:
-    uses: ./.github/workflows/lambda_deploy.yml
-    if: inputs.build-platforms == 'aws' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref_name == github.event.repository.default_branch))
-    needs: [setup, build-aws]
-    with:
-      environment: staging
-      api-url: https://staging-api.lambdafeedback.com
-      image-name: ${{ needs.build-aws.outputs.registry }}/lambda-feedback-staging-functions-repository:${{ needs.setup.outputs.evaluation_function_name }}
-      function-name: ${{ needs.setup.outputs.evaluation_function_name }}
-      region: ${{ needs.setup.outputs.region }}
-    secrets:
-      aws-key-id: ${{ secrets.aws-key-id }}
-      aws-secret-key: ${{ secrets.aws-secret-key }}
-      function-admin-api-key: ${{ secrets.function-admin-api-key }}
-
-  deploy-production-aws:
-    uses: ./.github/workflows/lambda_deploy.yml
-    if: inputs.build-platforms == 'aws' && (github.repository != inputs.template-repository-name && github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref_name == github.event.repository.default_branch))
-    needs: [setup, build-aws]
-    with:
-      environment: production
-      api-url: https://prod-api.lambdafeedback.com
-      image-name: ${{ needs.build-aws.outputs.registry }}/lambda-feedback-production-functions-repository:${{ needs.setup.outputs.evaluation_function_name }}
-      function-name: ${{ needs.setup.outputs.evaluation_function_name }}
-      region:  ${{ needs.setup.outputs.region }}
-    secrets:
-      aws-key-id: ${{ secrets.aws-key-id }}
-      aws-secret-key: ${{ secrets.aws-secret-key }}
-      function-admin-api-key: ${{ secrets.function-admin-api-key }}
-
-  build-gcp:
-    uses: ./.github/workflows/gcp_build.yml
-    if: inputs.build-platforms == 'gcp'
-    needs: setup
-    strategy:
-      fail-fast: false
-      matrix:
-        environment: [staging, production]
-    with:
-      environment: ${{ matrix.environment }}
-      function-name: ${{ needs.setup.outputs.evaluation_function_name }}
-      region:  ${{ needs.setup.outputs.region }}
-      build-file: ${{ inputs.build-file }}
-      build-context: ${{ inputs.build-context }}
-      build-target: ${{ inputs.build-target }}
-      build-args: ${{ inputs.build-args }}
-      build-platforms: ${{ inputs.build-platforms }}
-      build-push: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref_name == github.event.repository.default_branch) }}
-    secrets:
-      function-admin-api-key: ${{ secrets.function-admin-api-key }}
-      gcp_credentials: ${{ secrets.gcp_credentials }}
-
-  deploy-gcp-staging:
-    uses: ./.github/workflows/gcp_deploy.yml
-    if: inputs.build-platforms == 'gcp' && github.repository != inputs.template-repository-name && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref_name == github.event.repository.default_branch))
-    needs: [setup, build-gcp]
-    with:
-      environment: staging
-      api-url: https://prod-api.lambdafeedback.com
-      repo:  ${{ needs.setup.outputs.region }}-docker.pkg.dev/wolfram-evaluation-functions/evaluation-function-staging
-      image-name: ${{ needs.setup.outputs.evaluation_function_name }}
-      function-name: ${{ needs.setup.outputs.evaluation_function_name }}-staging
-      region: ${{ needs.setup.outputs.region }}
-    secrets:
-      function-admin-api-key: ${{ secrets.function-admin-api-key }}
-      gcp_credentials: ${{ secrets.gcp_credentials }}
-
-  deploy-gcp-production:
-    uses: ./.github/workflows/gcp_deploy.yml
-    if: inputs.build-platforms == 'gcp' && github.repository != inputs.template-repository-name && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref_name == github.event.repository.default_branch))
-    needs: [setup, build-gcp]
-    with:
-      environment: production
-      api-url: https://prod-api.lambdafeedback.com
-      repo:  ${{ needs.setup.outputs.region }}-docker.pkg.dev/wolfram-evaluation-functions/evaluation-function
-      image-name: ${{ needs.setup.outputs.evaluation_function_name }}
-      function-name: ${{ needs.setup.outputs.evaluation_function_name }}
-      region:  ${{ needs.setup.outputs.region }}
-    secrets:
-      function-admin-api-key: ${{ secrets.function-admin-api-key }}
       gcp_credentials: ${{ secrets.gcp_credentials }}
