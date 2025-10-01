@@ -5,3 +5,4 @@ This repository contains common workflows which can be used to build and deploy 
 Notes:
 - For production deployment, `eval-production` must be defined in the repo (or template repo) with review protections
 - To build to AWS or GCP, the calling workflow should add `build-platforms: 'gcp'` to the calling workflow. 'aws' is the default
+- On first deploy to GCP, admin must change access permissions to unauthenticated
