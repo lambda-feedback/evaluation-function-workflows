@@ -116,6 +116,9 @@ jobs:
         if: inputs.build-platforms == 'gcp'
         id: normalize-function-name
         run: echo name=${{steps.setup-normalize-function-name.outputs.lowercase}} >> $GITHUB_OUTPUT
+      - name: AWS function name
+        if: inputs.build-platforms == 'aws'
+        run: echo name=${{steps.evaluation_function_name.outputs}} >> $GITHUB_OUTPUT
       - name: Set default region based on platform
         id: set-region
         run: |
