@@ -107,18 +107,13 @@ jobs:
           if [[ -z "$functionName" ]]; then echo "Set EvaluationFunctionName in config.json"; exit 1; fi
           echo "name=$functionName" >> "$GITHUB_OUTPUT"
       - name: Setup normalize function name
-        if: inputs.build-platforms == 'gcp'
         id: setup-normalize-function-name
         uses: Entepotenz/change-string-case-action-min-dependencies@v1
         with:
           string: ${{ steps.evaluation_function_name.outputs.name }}
       - name: Normalize function name
-        if: inputs.build-platforms == 'gcp'
         id: normalize-function-name
         run: echo name=${{steps.setup-normalize-function-name.outputs.lowercase}} >> $GITHUB_OUTPUT
-      - name: AWS function name
-        if: inputs.build-platforms == 'aws'
-        run: echo name=${{steps.evaluation_function_name.outputs}} >> $GITHUB_OUTPUT
       - name: Set default region based on platform
         id: set-region
         run: |
