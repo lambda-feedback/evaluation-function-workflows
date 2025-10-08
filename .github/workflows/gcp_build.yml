@@ -43,6 +43,11 @@ on:
         type: string
         description: "The platforms to build the image for"
         required: false
+      image-tag:
+        type: string
+        description: "Comma-separated list of image tags (e.g., 'latest,v1.2.3')"
+        required: false
+        default: "latest"
     secrets:
       function-admin-api-key:
         description: "The API key for the Lambda Feedback function admin API"
@@ -86,4 +91,5 @@ jobs:
     
         IMAGE_URI="europe-west2-docker.pkg.dev/wolfram-evaluation-functions/${{ inputs.environment == 'staging' && 'evaluation-function-staging' || 'evaluation-function' }}/${{inputs.function-name}}:latest"
         docker build -t "$IMAGE_URI" .
+        docker tag "IMAGE_URI" "${{inputs.image-tag}}"
         docker push "$IMAGE_URI"
