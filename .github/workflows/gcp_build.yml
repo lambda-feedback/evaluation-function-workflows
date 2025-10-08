@@ -88,8 +88,9 @@ jobs:
     - name: Build and Push Docker image
       id: 'build-push'
       run: |
-    
         IMAGE_URI="europe-west2-docker.pkg.dev/wolfram-evaluation-functions/${{ inputs.environment == 'staging' && 'evaluation-function-staging' || 'evaluation-function' }}/${{inputs.function-name}}:latest"
+        TAGGED_IMAGE="europe-west2-docker.pkg.dev/wolfram-evaluation-functions/${{ inputs.environment == 'staging' && 'evaluation-function-staging' || 'evaluation-function' }}/${{inputs.function-name}}:${{inputs.image-tag}}"
         docker build -t "$IMAGE_URI" .
-        docker tag "$IMAGE_URI" "${{inputs.image-tag}}"
+        docker tag "$IMAGE_URI" "$TAGGED_IMAGE"
         docker push "$IMAGE_URI"
+        docker push "$TAGGED_IMAGE"
