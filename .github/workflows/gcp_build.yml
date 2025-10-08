@@ -91,5 +91,5 @@ jobs:
     
         IMAGE_URI="europe-west2-docker.pkg.dev/wolfram-evaluation-functions/${{ inputs.environment == 'staging' && 'evaluation-function-staging' || 'evaluation-function' }}/${{inputs.function-name}}:latest"
         docker build -t "$IMAGE_URI" .
-        docker tag "IMAGE_URI" "${{inputs.image-tag}}"
+        docker tag "$IMAGE_URI" "${{inputs.image-tag}}"
         docker push "$IMAGE_URI"

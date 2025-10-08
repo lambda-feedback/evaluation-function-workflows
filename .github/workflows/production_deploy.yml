@@ -220,6 +220,7 @@ jobs:
   build-aws:
     uses: ./.github/workflows/lambda_build.yml
     if: inputs.build-platforms == 'aws'
+    needs: version
     strategy:
       fail-fast: false
     with:
@@ -240,7 +241,7 @@ jobs:
   deploy-production-aws:
     uses: ./.github/workflows/lambda_deploy.yml
     if: inputs.build-platforms == 'aws' && (github.repository != inputs.template-repository-name && github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref_name == github.event.repository.default_branch))
-    needs: build-aws
+    needs: [build-aws, version]
     with:
       environment: eval-production
       api-url: https://prod-api.lambdafeedback.com
