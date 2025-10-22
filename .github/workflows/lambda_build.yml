@@ -48,6 +48,11 @@ on:
         description: "When enabled this will run the disk clean up step"
         required: false
         default: false
+      lfs:
+        type: boolean
+        description: "Support git LFS"
+        default: false
+        required: false
     secrets:
       aws-key-id:
         description: "The AWS access key ID"
@@ -77,6 +82,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          lfs: ${{inputs.lfs}}
           fetch-depth: 0
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4

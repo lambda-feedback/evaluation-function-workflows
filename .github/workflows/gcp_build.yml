@@ -48,6 +48,11 @@ on:
         description: "Comma-separated list of image tags (e.g., 'latest,v1.2.3')"
         required: false
         default: "latest"
+      lfs:
+        type: boolean
+        description: "Support git LFS"
+        default: false
+        required: false
     secrets:
       function-admin-api-key:
         description: "The API key for the Lambda Feedback function admin API"
@@ -73,6 +78,8 @@ jobs:
 
     steps:
     - uses: 'actions/checkout@v4'
+      with:
+        lfs: ${{inputs.lfs}}
 
     - id: 'auth'
       uses: 'google-github-actions/auth@v3'
