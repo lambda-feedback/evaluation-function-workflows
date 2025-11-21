@@ -154,7 +154,8 @@ jobs:
 
 
   deploy-staging:
-    if: ${{inputs.environment == 'staging'}}
+    # Always run staging deployment first when production is requested
+    if: ${{inputs.environment == 'staging' || inputs.environment == 'production'}}
     uses: ./.github/workflows/staging_deploy.yml
     needs: setup
     with:
@@ -175,9 +176,10 @@ jobs:
       gcp_credentials: ${{ secrets.gcp_credentials }}
 
   deploy-production:
-    if: ${{inputs.environment == 'production'}}
+    # Only run production if staging succeeded
+    if: ${{inputs.environment == 'production' && needs.deploy-staging.result == 'success'}}
     uses: ./.github/workflows/production_deploy.yml
-    needs: setup
+    needs: [setup, deploy-staging]
     with:
       evaluation_function_name: ${{ needs.setup.outputs.evaluation_function_name }}
       template-repository-name: ${{ inputs.template-repository-name }}
