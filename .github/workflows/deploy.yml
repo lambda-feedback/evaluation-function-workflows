@@ -76,7 +76,7 @@ jobs:
     name: Setup
     runs-on: ubuntu-latest
     outputs:
-      evaluation_function_name: ${{ steps.normalize-function-name.outputs.name }}
+      evaluation_function_name: ${{ inputs.build-platforms == 'aws' && steps.evaluation_function_name.outputs.name || steps.normalize-function-name.outputs.name }}
       region: ${{ steps.set-region.outputs.region }}
     permissions:
       contents: read
@@ -113,11 +113,13 @@ jobs:
           if [[ -z "$functionName" ]]; then echo "Set EvaluationFunctionName in config.json"; exit 1; fi
           echo "name=$functionName" >> "$GITHUB_OUTPUT"
       - name: Setup normalize function name
+        if: inputs.build-platforms != 'aws'
         id: setup-normalize-function-name
         uses: Entepotenz/change-string-case-action-min-dependencies@v1
         with:
           string: ${{ steps.evaluation_function_name.outputs.name }}
       - name: Normalize function name
+        if: inputs.build-platforms != 'aws'
         id: normalize-function-name
         run: echo name=${{steps.setup-normalize-function-name.outputs.lowercase}} >> $GITHUB_OUTPUT
       - name: Set default region based on platform
