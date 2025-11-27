@@ -80,6 +80,9 @@ on:
       gcp_credentials:
         description: "The JSON key for deploying to GCP"
         required: false
+      TEST_API_ENDPOINT:
+        description: "The staging evaluation function to use to test against the database"
+        required: false
       DB_USER:
         description: "Database User for fetching test data"
         required: false
@@ -98,7 +101,6 @@ on:
 
 jobs:
   setup:
-# ... (setup job remains unchanged) ...
     name: Setup
     runs-on: ubuntu-latest
     outputs:
@@ -176,7 +178,6 @@ jobs:
           fi
 
   deploy-staging:
-# ... (deploy-staging job remains unchanged) ...
     if: ${{inputs.environment == 'staging' || inputs.environment == 'production'}}
     uses: ./.github/workflows/staging_deploy.yml
     needs: setup
@@ -203,10 +204,10 @@ jobs:
     uses: lambda-feedback/Database-Testing/.github/workflows/test_evaluation_function.yml@main
     needs: [setup, deploy-staging]
     with:
-      endpoint: ${{ inputs.test-api-endpoint }}${{ needs.setup.outputs.evaluation_function_name }}
       eval_function: ${{ needs.setup.outputs.evaluation_function_name }}
       sql_limit: 500 
     secrets:
+      TEST_API_ENDPOINT: ${{ secrets.TEST_API_ENDPOINT }}
       DB_USER: ${{ secrets.DB_USER }}
       DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
       DB_HOST: ${{ secrets.DB_HOST }}
