@@ -54,6 +54,16 @@ on:
         description: "Support git LFS"
         default: false
         required: false
+      test-api-endpoint:
+        type: string
+        description: "The base API URL for running tests against an evaluation function (staging endpoint)"
+        required: false
+      run-tests:
+        type: boolean
+        description: "Set to true to run the pre-production validation tests."
+        required: false
+        default: false
+        
     secrets:
       aws-key-id:
         description: "The AWS access key ID"
@@ -70,9 +80,25 @@ on:
       gcp_credentials:
         description: "The JSON key for deploying to GCP"
         required: false
+      DB_USER:
+        description: "Database User for fetching test data"
+        required: false
+      DB_PASSWORD:
+        description: "Database Password for fetching test data"
+        required: false
+      DB_HOST:
+        description: "Database Host for fetching test data"
+        required: false
+      DB_PORT:
+        description: "Database Port for fetching test data"
+        required: false
+      DB_NAME:
+        description: "Database Name for fetching test data"
+        required: false
 
 jobs:
   setup:
+# ... (setup job remains unchanged) ...
     name: Setup
     runs-on: ubuntu-latest
     outputs:
@@ -126,13 +152,10 @@ jobs:
         id: set-region
         run: |
           if [[ -n "${{ inputs.region }}" ]]; then
-            # Use provided region
             region="${{ inputs.region }}"
           elif [[ "${{ inputs.build-platforms }}" == "aws" ]]; then
-            # Default AWS region
             region="eu-west-2"
           else
-            # Default GCP region (or other platforms)
             region="europe-west2"
           fi
           echo "region=$region" >> "$GITHUB_OUTPUT"
@@ -152,9 +175,8 @@ jobs:
             exit 1
           fi
 
-
   deploy-staging:
-    # Always run staging deployment first when production is requested
+# ... (deploy-staging job remains unchanged) ...
     if: ${{inputs.environment == 'staging' || inputs.environment == 'production'}}
     uses: ./.github/workflows/staging_deploy.yml
     needs: setup
@@ -174,12 +196,35 @@ jobs:
       function-admin-api-key: ${{ secrets.function-admin-api-key }}
       build-secrets: ${{ secrets.build-secrets }}
       gcp_credentials: ${{ secrets.gcp_credentials }}
+      
+  run-pre-production-tests:
+    name: 🧪 Run Staging Validation Tests
+    if: ${{ inputs.environment == 'production' && needs.deploy-staging.result == 'success' && inputs.run-tests }}
+    uses: lambda-feedback/Database-Testing/.github/workflows/test_evaluation_function.yml@main
+    needs: [setup, deploy-staging]
+    with:
+      endpoint: ${{ inputs.test-api-endpoint }}${{ needs.setup.outputs.evaluation_function_name }}
+      eval_function: ${{ needs.setup.outputs.evaluation_function_name }}
+      sql_limit: 500 
+    secrets:
+      DB_USER: ${{ secrets.DB_USER }}
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      DB_HOST: ${{ secrets.DB_HOST }}
+      DB_PORT: ${{ secrets.DB_PORT }}
+      DB_NAME: ${{ secrets.DB_NAME }}
+
 
   deploy-production:
-    # Only run production if staging succeeded
-    if: ${{inputs.environment == 'production' && needs.deploy-staging.result == 'success'}}
+    if: >
+      ${{ inputs.environment == 'production' && 
+      ( (inputs.run-tests && needs.run-pre-production-tests.result == 'success') || 
+        (!inputs.run-tests && needs.deploy-staging.result == 'success') 
+      ) }}
     uses: ./.github/workflows/production_deploy.yml
-    needs: [setup, deploy-staging]
+    needs: 
+      - setup 
+      - deploy-staging 
+      - ${{ (inputs.run-tests == true) && 'run-pre-production-tests' || '' }}
     with:
       evaluation_function_name: ${{ needs.setup.outputs.evaluation_function_name }}
       template-repository-name: ${{ inputs.template-repository-name }}
