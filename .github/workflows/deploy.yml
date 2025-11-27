@@ -225,7 +225,7 @@ jobs:
     needs: 
       - setup 
       - deploy-staging 
-      - ${{ fromJSON(format('["{0}"]', inputs.run-tests == true && 'run-pre-production-tests' || ''))[0] }}
+      - run-pre-production-tests
     with:
       evaluation_function_name: ${{ needs.setup.outputs.evaluation_function_name }}
       template-repository-name: ${{ inputs.template-repository-name }}
