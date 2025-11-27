@@ -222,10 +222,10 @@ jobs:
         (!inputs.run-tests && needs.deploy-staging.result == 'success') 
       ) }}
     uses: ./.github/workflows/production_deploy.yml
-    needs: 
+   needs: 
       - setup 
       - deploy-staging 
-      - ${{ (inputs.run-tests == true) && 'run-pre-production-tests' || '' }}
+      - ${{ fromJSON(format('["{0}"]', inputs.run-tests == true && 'run-pre-production-tests' || ''))[0] }}
     with:
       evaluation_function_name: ${{ needs.setup.outputs.evaluation_function_name }}
       template-repository-name: ${{ inputs.template-repository-name }}
