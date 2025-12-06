@@ -98,6 +98,12 @@ on:
       DB_NAME:
         description: "Database Name for fetching test data"
         required: false
+      GCP_DB_CREDS:
+        description: "The JSON API Key for database testing"
+        required: false
+      GCP_PROJECT_ID:
+        description: "The Project ID for database testing"
+        required: false
 
 jobs:
   setup:
@@ -213,6 +219,8 @@ jobs:
       DB_HOST: ${{ secrets.DB_HOST }}
       DB_PORT: ${{ secrets.DB_PORT }}
       DB_NAME: ${{ secrets.DB_NAME }}
+      GCP_SERVICE_ACCOUNT_KEY: {{$ secrets.GCP_DB_CREDS }}
+      GCP_PROJECT_ID: {{$ secrets.GCP_DB_PROJECT_ID }}
 
 
   deploy-production:
