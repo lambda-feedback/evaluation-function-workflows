@@ -136,9 +136,8 @@ jobs:
       - name: Read config.json
         id: config
         run: |
-          echo 'config<<EOF' >> $GITHUB_OUTPUT
-          cat ./config.json >> $GITHUB_OUTPUT
-          echo 'EOF' >> $GITHUB_OUTPUT
+          content=$(cat ./config.json | tr -d '\n\r')
+          echo "config=$content" >> $GITHUB_OUTPUT
 
       - name: Get Evaluation Function Name
         id: evaluation_function_name
