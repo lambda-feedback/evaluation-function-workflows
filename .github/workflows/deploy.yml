@@ -58,7 +58,7 @@ on:
         type: string
         description: "The base API URL for running tests against an evaluation function (staging endpoint)"
         required: false
-      run-tests:
+      run-database-tests:
         type: boolean
         description: "Set to true to run the pre-production validation tests."
         required: false
@@ -205,7 +205,7 @@ jobs:
       
   run-pre-production-tests:
     name: 🧪 Run Staging Validation Tests
-    if: ${{ inputs.environment == 'production' && needs.deploy-staging.result == 'success' && inputs.run-tests }}
+    if: ${{ inputs.environment == 'production' && needs.deploy-staging.result == 'success' && inputs.run-database-tests }}
     uses: lambda-feedback/Database-Testing/.github/workflows/test_evaluation_function.yml@main
     needs: [setup, deploy-staging]
     with:
@@ -225,8 +225,8 @@ jobs:
   deploy-production:
     if: >
       ${{ inputs.environment == 'production' && 
-      ( (inputs.run-tests && needs.run-pre-production-tests.result == 'success') || 
-        (!inputs.run-tests && needs.deploy-staging.result == 'success') 
+      ( (inputs.run-database-tests && needs.run-pre-production-tests.result == 'success') || 
+        (!inputs.run-database-tests && needs.deploy-staging.result == 'success') 
       ) }}
     uses: ./.github/workflows/production_deploy.yml
     needs: 
