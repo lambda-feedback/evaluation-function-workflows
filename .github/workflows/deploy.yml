@@ -112,6 +112,7 @@ jobs:
     outputs:
       evaluation_function_name: ${{ inputs.build-platforms == 'aws' && steps.evaluation_function_name.outputs.name || steps.normalize-function-name.outputs.name }}
       region: ${{ steps.set-region.outputs.region }}
+      sha: ${{ steps.sha.outputs.sha }}
     permissions:
       contents: read
       packages: write
@@ -166,6 +167,10 @@ jobs:
             region="europe-west2"
           fi
           echo "region=$region" >> "$GITHUB_OUTPUT"
+      - name: Output SHA
+        id: sha
+        run: echo "sha=${{ github.sha }}" >> $GITHUB_OUTPUT
+
       - name: Validate AWS secrets for AWS platform
         if: inputs.build-platforms == 'aws'
         run: |
@@ -243,7 +248,7 @@ jobs:
       build-args: ${{inputs.build-args}}
       build-platforms: ${{inputs.build-platforms}}
       version-bump: ${{inputs.version-bump}}
-      branch: ${{inputs.branch}}
+      sha: ${{ needs.setup.outputs.sha }}
       lfs: ${{inputs.lfs}}
     secrets:
       aws-key-id: ${{ secrets.aws-key-id }}

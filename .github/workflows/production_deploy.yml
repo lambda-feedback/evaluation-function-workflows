@@ -43,11 +43,10 @@ on:
         description: "The platforms to build the image for"
         default: "aws"
         required: false
-      branch:
-        description: 'Branch to release from'
+      sha:
+        description: 'The exact commit SHA to deploy (from staging)'
         type: string
         required: true
-        default: 'main'
       lfs:
         type: boolean
         description: "Support git LFS"
@@ -75,17 +74,17 @@ jobs:
     name: Checkout Code
     runs-on: ubuntu-latest
     outputs:
-      branch: ${{ steps.set-branch.outputs.branch }}
+      sha: ${{ steps.set-sha.outputs.sha }}
     steps:
-      - name: Set branch
-        id: set-branch
+      - name: Set SHA
+        id: set-sha
         run: |
-          echo "branch=${{ inputs.branch }}" >> $GITHUB_OUTPUT
-      
+          echo "sha=${{ inputs.sha }}" >> $GITHUB_OUTPUT
+
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.branch }}
+          ref: ${{ inputs.sha }}
           fetch-depth: 0
 
   version:
@@ -99,7 +98,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ needs.checkout.outputs.branch }}
+          ref: ${{ needs.checkout.outputs.sha }}
           fetch-depth: 0
           lfs: ${{inputs.lfs}}
 
@@ -163,7 +162,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ needs.checkout.outputs.branch }}
+          ref: ${{ needs.checkout.outputs.sha }}
           fetch-depth: 0
 
       - name: Create and push tag
@@ -210,7 +209,7 @@ jobs:
             
             **Full version:** `${{ needs.version.outputs.new-version }}`
             **Trigger:** Manual deployment
-            **Branch:** `${{ inputs.branch }}`
+            **SHA:** `${{ inputs.sha }}`
             
             ### Changes
             This release includes all changes up to commit `${{ github.sha }}`.
