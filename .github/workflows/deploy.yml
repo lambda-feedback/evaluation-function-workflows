@@ -183,7 +183,7 @@ jobs:
           fi
 
   deploy-staging:
-    if: ${{inputs.environment == 'staging' || inputs.environment == 'production'}}
+    if: inputs.environment == 'staging' || inputs.environment == 'production'
     uses: ./.github/workflows/staging_deploy.yml
     needs: setup
     with:
@@ -205,7 +205,7 @@ jobs:
       
   run-pre-production-tests:
     name: 🧪 Run Staging Validation Tests
-    if: ${{ inputs.environment == 'production' && needs.deploy-staging.result == 'success' && inputs.run-database-tests }}
+    if: inputs.environment == 'production' && needs.deploy-staging.result == 'success' && inputs.run-database-tests
     uses: lambda-feedback/Database-Testing/.github/workflows/test_evaluation_function.yml@main
     needs: [setup, deploy-staging]
     with:
@@ -224,10 +224,10 @@ jobs:
 
   deploy-production:
     if: >
-      ${{ inputs.environment == 'production' && 
-      ( (inputs.run-database-tests && needs.run-pre-production-tests.result == 'success') || 
-        (!inputs.run-database-tests && needs.deploy-staging.result == 'success') 
-      ) }}
+      inputs.environment == 'production' &&
+      ( (inputs.run-database-tests && needs.run-pre-production-tests.result == 'success') ||
+        (!inputs.run-database-tests && needs.deploy-staging.result == 'success')
+      )
     uses: ./.github/workflows/production_deploy.yml
     needs: 
       - setup 
