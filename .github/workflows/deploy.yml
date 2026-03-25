@@ -102,7 +102,7 @@ on:
         description: "The JSON API Key for database testing"
         required: false
       GCP_PROJECT_ID:
-        description: "The Project ID for database testing"
+        description: "The Proxject ID for database testing"
         required: false
 
 jobs:
@@ -227,17 +227,31 @@ jobs:
       GCP_PROJECT_ID: ${{ secrets.GCP_DB_PROJECT_ID }}
 
 
+  await-approval:
+    name: "\U0001F6AB Await Manual Approval (Tests Failed)"
+    if: >
+      inputs.environment == 'production' &&
+      needs.run-pre-production-tests.result == 'failure'
+    environment: production-override
+    runs-on: ubuntu-latest
+    needs: [setup, deploy-staging, run-pre-production-tests]
+    steps:
+      - name: Manual approval received
+        run: echo "Manual approval granted — proceeding to production despite test failures."
+
   deploy-production:
     if: >
       inputs.environment == 'production' &&
       ( (inputs.run-database-tests && needs.run-pre-production-tests.result == 'success') ||
+        (inputs.run-database-tests && needs.await-approval.result == 'success') ||
         (!inputs.run-database-tests && needs.deploy-staging.result == 'success')
       )
     uses: ./.github/workflows/production_deploy.yml
-    needs: 
-      - setup 
-      - deploy-staging 
+    needs:
+      - setup
+      - deploy-staging
       - run-pre-production-tests
+      - await-approval
     with:
       evaluation_function_name: ${{ needs.setup.outputs.evaluation_function_name }}
       template-repository-name: ${{ inputs.template-repository-name }}
