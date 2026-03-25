@@ -230,6 +230,7 @@ jobs:
   await-approval:
     name: "\U0001F6AB Await Manual Approval (Tests Failed)"
     if: >
+      always() &&
       inputs.environment == 'production' &&
       needs.run-pre-production-tests.result == 'failure'
     environment: production-override
