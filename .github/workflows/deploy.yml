@@ -242,10 +242,13 @@ jobs:
 
   deploy-production:
     if: >
+      always() &&
       inputs.environment == 'production' &&
-      ( (inputs.run-database-tests && needs.run-pre-production-tests.result == 'success') ||
-        (inputs.run-database-tests && needs.await-approval.result == 'success') ||
-        (!inputs.run-database-tests && needs.deploy-staging.result == 'success')
+      needs.deploy-staging.result == 'success' &&
+      (
+        needs.run-pre-production-tests.result == 'success' ||
+        needs.run-pre-production-tests.result == 'skipped' ||
+        needs.await-approval.result == 'success'
       )
     uses: ./.github/workflows/production_deploy.yml
     needs:
