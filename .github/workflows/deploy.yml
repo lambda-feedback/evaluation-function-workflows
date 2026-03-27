@@ -63,6 +63,11 @@ on:
         description: "Set to true to run the pre-production validation tests."
         required: false
         default: false
+      seed:
+        type: string
+        description: "Random seed for reproducible sampling (float in [-1.0, 1.0]). Leave blank to auto-generate."
+        required: false
+        default: ''
         
     secrets:
       aws-key-id:
@@ -215,7 +220,8 @@ jobs:
     needs: [setup, deploy-staging]
     with:
       eval_function: ${{ needs.setup.outputs.evaluation_function_name }}
-      sql_limit: 500 
+      sql_limit: 500
+      seed: ${{ inputs.seed }}
     secrets:
       TEST_API_ENDPOINT: ${{ secrets.TEST_API_ENDPOINT }}
       DB_USER: ${{ secrets.DB_USER }}
