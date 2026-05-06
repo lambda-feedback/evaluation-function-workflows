@@ -255,8 +255,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: [setup, deploy-staging, run-pre-production-tests]
     steps:
-      - name: Manual approval received
-        run: echo "Manual approval granted — proceeding to production despite test failures."
+      - name: "Tests failed — manual override approved for production deployment"
+        run: echo "Manual override approved. Pre-production tests failed but deployment to production was explicitly authorised."
 
   deploy-production:
     if: >
