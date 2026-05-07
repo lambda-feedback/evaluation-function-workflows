@@ -43,6 +43,16 @@ on:
         type: string
         description: "The platforms to build the image for"
         required: false
+      image-tag:
+        type: string
+        description: "Comma-separated list of image tags (e.g., 'latest,v1.2.3')"
+        required: false
+        default: "latest"
+      lfs:
+        type: boolean
+        description: "Support git LFS"
+        default: false
+        required: false
     secrets:
       function-admin-api-key:
         description: "The API key for the Lambda Feedback function admin API"
@@ -68,6 +78,8 @@ jobs:
 
     steps:
     - uses: 'actions/checkout@v4'
+      with:
+        lfs: ${{inputs.lfs}}
 
     - id: 'auth'
       uses: 'google-github-actions/auth@v3'
@@ -83,7 +95,9 @@ jobs:
     - name: Build and Push Docker image
       id: 'build-push'
       run: |
-    
         IMAGE_URI="europe-west2-docker.pkg.dev/wolfram-evaluation-functions/${{ inputs.environment == 'staging' && 'evaluation-function-staging' || 'evaluation-function' }}/${{inputs.function-name}}:latest"
+        TAGGED_IMAGE="europe-west2-docker.pkg.dev/wolfram-evaluation-functions/${{ inputs.environment == 'staging' && 'evaluation-function-staging' || 'evaluation-function' }}/${{inputs.function-name}}:${{inputs.image-tag}}"
         docker build -t "$IMAGE_URI" .
+        docker tag "$IMAGE_URI" "$TAGGED_IMAGE"
         docker push "$IMAGE_URI"
+        docker push "$TAGGED_IMAGE"

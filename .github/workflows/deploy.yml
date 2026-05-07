@@ -7,6 +7,11 @@ on:
         type: string
         description: "The name of the repository where the template is located"
         required: true
+      environment:
+        type: string
+        description: "Deploy to staging or production"
+        required: true
+        default: staging
       region:
         type: string
         description: "The AWS region to deploy to"
@@ -34,6 +39,51 @@ on:
         description: "The platforms to build the image for"
         default: "aws"
         required: false
+      version-bump:
+        type: string
+        description: "Used for prod: The version number to bump (major, minor or patch)"
+        required: false
+        default: "patch"
+      branch:
+        type: string
+        description: "Used for prod: The branch to deploy"
+        required: false
+        default: "main"
+      lfs:
+        type: boolean
+        description: "Support git LFS"
+        default: false
+        required: false
+      test-api-endpoint:
+        type: string
+        description: "The base API URL for running tests against an evaluation function (staging endpoint)"
+        required: false
+      run-database-tests:
+        type: boolean
+        description: "Set to true to run the pre-production validation tests."
+        required: false
+        default: false
+      seed:
+        type: string
+        description: "Random seed for reproducible sampling (float in [-1.0, 1.0]). Leave blank to auto-generate."
+        required: false
+        default: ''
+      request_delay:
+        type: string
+        description: "Delay (seconds) between dispatching requests"
+        required: false
+        default: '0'
+      max_concurrency:
+        type: string
+        description: "Max concurrent requests (lower for GPT-backed functions)"
+        required: false
+        default: '5'
+      sql_limit:
+        type: number
+        description: "Maximum number of SQL rows to sample for database testing"
+        required: false
+        default: 500
+
     secrets:
       aws-key-id:
         description: "The AWS access key ID"
@@ -50,14 +100,39 @@ on:
       gcp_credentials:
         description: "The JSON key for deploying to GCP"
         required: false
+      TEST_API_ENDPOINT:
+        description: "The staging evaluation function to use to test against the database"
+        required: false
+      DB_USER:
+        description: "Database User for fetching test data"
+        required: false
+      DB_PASSWORD:
+        description: "Database Password for fetching test data"
+        required: false
+      DB_HOST:
+        description: "Database Host for fetching test data"
+        required: false
+      DB_PORT:
+        description: "Database Port for fetching test data"
+        required: false
+      DB_NAME:
+        description: "Database Name for fetching test data"
+        required: false
+      GCP_DB_CREDS:
+        description: "The JSON API Key for database testing"
+        required: false
+      GCP_PROJECT_ID:
+        description: "The Proxject ID for database testing"
+        required: false
 
 jobs:
   setup:
     name: Setup
     runs-on: ubuntu-latest
     outputs:
-      evaluation_function_name: ${{ steps.normalize-function-name.outputs.name }}
+      evaluation_function_name: ${{ inputs.build-platforms == 'aws' && steps.evaluation_function_name.outputs.name || steps.normalize-function-name.outputs.name }}
       region: ${{ steps.set-region.outputs.region }}
+      sha: ${{ steps.sha.outputs.sha }}
     permissions:
       contents: read
       packages: write
@@ -67,6 +142,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          lfs: ${{inputs.lfs}}
 
       - name: Set up boilerplate config.json
         if: github.repository == inputs.template-repository-name
@@ -81,9 +157,8 @@ jobs:
       - name: Read config.json
         id: config
         run: |
-          echo 'config<<EOF' >> $GITHUB_OUTPUT
-          cat ./config.json >> $GITHUB_OUTPUT
-          echo 'EOF' >> $GITHUB_OUTPUT
+          content=$(cat ./config.json | tr -d '\n\r')
+          echo "config=$content" >> $GITHUB_OUTPUT
 
       - name: Get Evaluation Function Name
         id: evaluation_function_name
@@ -92,27 +167,30 @@ jobs:
           if [[ -z "$functionName" ]]; then echo "Set EvaluationFunctionName in config.json"; exit 1; fi
           echo "name=$functionName" >> "$GITHUB_OUTPUT"
       - name: Setup normalize function name
+        if: inputs.build-platforms != 'aws'
         id: setup-normalize-function-name
         uses: Entepotenz/change-string-case-action-min-dependencies@v1
         with:
           string: ${{ steps.evaluation_function_name.outputs.name }}
       - name: Normalize function name
+        if: inputs.build-platforms != 'aws'
         id: normalize-function-name
         run: echo name=${{steps.setup-normalize-function-name.outputs.lowercase}} >> $GITHUB_OUTPUT
       - name: Set default region based on platform
         id: set-region
         run: |
           if [[ -n "${{ inputs.region }}" ]]; then
-            # Use provided region
             region="${{ inputs.region }}"
           elif [[ "${{ inputs.build-platforms }}" == "aws" ]]; then
-            # Default AWS region
             region="eu-west-2"
           else
-            # Default GCP region (or other platforms)
             region="europe-west2"
           fi
           echo "region=$region" >> "$GITHUB_OUTPUT"
+      - name: Output SHA
+        id: sha
+        run: echo "sha=${{ github.sha }}" >> $GITHUB_OUTPUT
+
       - name: Validate AWS secrets for AWS platform
         if: inputs.build-platforms == 'aws'
         run: |
@@ -129,107 +207,93 @@ jobs:
             exit 1
           fi
 
-  build-aws:
-    uses: ./.github/workflows/lambda_build.yml
-    if: inputs.build-platforms == 'aws'
+  deploy-staging:
+    if: inputs.environment == 'staging' || inputs.environment == 'production'
+    uses: ./.github/workflows/staging_deploy.yml
     needs: setup
-    strategy:
-      fail-fast: false
-      matrix:
-        environment: [staging, production]
     with:
-      environment: ${{ matrix.environment }}
-      function-name: ${{ needs.setup.outputs.evaluation_function_name }}
-      region:  ${{ needs.setup.outputs.region }}
+      evaluation_function_name: ${{ needs.setup.outputs.evaluation_function_name }}
+      template-repository-name: ${{ inputs.template-repository-name }}
+      region: ${{ needs.setup.outputs.region }}
       build-file: ${{ inputs.build-file }}
       build-context: ${{ inputs.build-context }}
       build-target: ${{ inputs.build-target }}
-      build-args: ${{ inputs.build-args }}
-      build-platforms: ${{ inputs.build-platforms }}
-      build-push: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref_name == github.event.repository.default_branch) }}
+      build-args: ${{inputs.build-args}}
+      build-platforms: ${{inputs.build-platforms}}
+      lfs: ${{inputs.lfs}}
     secrets:
       aws-key-id: ${{ secrets.aws-key-id }}
       aws-secret-key: ${{ secrets.aws-secret-key }}
+      function-admin-api-key: ${{ secrets.function-admin-api-key }}
       build-secrets: ${{ secrets.build-secrets }}
-
-  deploy-staging-aws:
-    uses: ./.github/workflows/lambda_deploy.yml
-    if: inputs.build-platforms == 'aws' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref_name == github.event.repository.default_branch))
-    needs: [setup, build-aws]
+      gcp_credentials: ${{ secrets.gcp_credentials }}
+      
+  run-pre-production-tests:
+    name: Run Staging Validation Tests
+    if: inputs.environment == 'production' && needs.deploy-staging.result == 'success' && inputs.run-database-tests
+    uses: lambda-feedback/Database-Testing/.github/workflows/test_evaluation_function.yml@main
+    needs: [setup, deploy-staging]
     with:
-      environment: staging
-      api-url: https://staging-api.lambdafeedback.com
-      image-name: ${{ needs.build-aws.outputs.registry }}/lambda-feedback-staging-functions-repository:${{ needs.setup.outputs.evaluation_function_name }}
-      function-name: ${{ needs.setup.outputs.evaluation_function_name }}
+      eval_function: ${{ needs.setup.outputs.evaluation_function_name }}
+      sql_limit: ${{ inputs.sql_limit }}
+      seed: ${{ inputs.seed }}
+      request_delay: ${{ inputs.request_delay }}
+      max_concurrency: ${{ inputs.max_concurrency }}
+    secrets:
+      TEST_API_ENDPOINT: ${{ secrets.TEST_API_ENDPOINT }}
+      DB_USER: ${{ secrets.DB_USER }}
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      DB_HOST: ${{ secrets.DB_HOST }}
+      DB_PORT: ${{ secrets.DB_PORT }}
+      DB_NAME: ${{ secrets.DB_NAME }}
+      GCP_SERVICE_ACCOUNT_KEY: ${{ secrets.GCP_DB_CREDS }}
+      GCP_PROJECT_ID: ${{ secrets.GCP_DB_PROJECT_ID }}
+
+
+  await-approval:
+    name: "Await Manual Approval (Tests Failed)"
+    if: >
+      always() &&
+      inputs.environment == 'production' &&
+      needs.run-pre-production-tests.result == 'failure'
+    environment: production-override
+    runs-on: ubuntu-latest
+    needs: [setup, deploy-staging, run-pre-production-tests]
+    steps:
+      - name: "Tests failed — manual override approved for production deployment"
+        run: echo "Manual override approved. Pre-production tests failed but deployment to production was explicitly authorised."
+
+  deploy-production:
+    if: >
+      always() &&
+      inputs.environment == 'production' &&
+      needs.deploy-staging.result == 'success' &&
+      (
+        needs.run-pre-production-tests.result == 'success' ||
+        needs.run-pre-production-tests.result == 'skipped' ||
+        needs.await-approval.result == 'success'
+      )
+    uses: ./.github/workflows/production_deploy.yml
+    needs:
+      - setup
+      - deploy-staging
+      - run-pre-production-tests
+      - await-approval
+    with:
+      evaluation_function_name: ${{ needs.setup.outputs.evaluation_function_name }}
+      template-repository-name: ${{ inputs.template-repository-name }}
       region: ${{ needs.setup.outputs.region }}
-    secrets:
-      aws-key-id: ${{ secrets.aws-key-id }}
-      aws-secret-key: ${{ secrets.aws-secret-key }}
-      function-admin-api-key: ${{ secrets.function-admin-api-key }}
-
-  deploy-production-aws:
-    uses: ./.github/workflows/lambda_deploy.yml
-    if: inputs.build-platforms == 'aws' && (github.repository != inputs.template-repository-name && github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref_name == github.event.repository.default_branch))
-    needs: [setup, build-aws]
-    with:
-      environment: production
-      api-url: https://prod-api.lambdafeedback.com
-      image-name: ${{ needs.build-aws.outputs.registry }}/lambda-feedback-production-functions-repository:${{ needs.setup.outputs.evaluation_function_name }}
-      function-name: ${{ needs.setup.outputs.evaluation_function_name }}
-      region:  ${{ needs.setup.outputs.region }}
-    secrets:
-      aws-key-id: ${{ secrets.aws-key-id }}
-      aws-secret-key: ${{ secrets.aws-secret-key }}
-      function-admin-api-key: ${{ secrets.function-admin-api-key }}
-
-  build-gcp:
-    uses: ./.github/workflows/gcp_build.yml
-    if: inputs.build-platforms == 'gcp'
-    needs: setup
-    strategy:
-      fail-fast: false
-      matrix:
-        environment: [staging, production]
-    with:
-      environment: ${{ matrix.environment }}
-      function-name: ${{ needs.setup.outputs.evaluation_function_name }}
-      region:  ${{ needs.setup.outputs.region }}
       build-file: ${{ inputs.build-file }}
       build-context: ${{ inputs.build-context }}
       build-target: ${{ inputs.build-target }}
-      build-args: ${{ inputs.build-args }}
-      build-platforms: ${{ inputs.build-platforms }}
-      build-push: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref_name == github.event.repository.default_branch) }}
+      build-args: ${{inputs.build-args}}
+      build-platforms: ${{inputs.build-platforms}}
+      version-bump: ${{inputs.version-bump}}
+      sha: ${{ needs.setup.outputs.sha }}
+      lfs: ${{inputs.lfs}}
     secrets:
+      aws-key-id: ${{ secrets.aws-key-id }}
+      aws-secret-key: ${{ secrets.aws-secret-key }}
       function-admin-api-key: ${{ secrets.function-admin-api-key }}
-      gcp_credentials: ${{ secrets.gcp_credentials }}
-
-  deploy-gcp-staging:
-    uses: ./.github/workflows/gcp_deploy.yml
-    if: inputs.build-platforms == 'gcp' && github.repository != inputs.template-repository-name && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref_name == github.event.repository.default_branch))
-    needs: [setup, build-gcp]
-    with:
-      environment: staging
-      api-url: https://prod-api.lambdafeedback.com
-      repo:  ${{ needs.setup.outputs.region }}-docker.pkg.dev/wolfram-evaluation-functions/evaluation-function-staging
-      image-name: ${{ needs.setup.outputs.evaluation_function_name }}
-      function-name: ${{ needs.setup.outputs.evaluation_function_name }}-staging
-      region: ${{ needs.setup.outputs.region }}
-    secrets:
-      function-admin-api-key: ${{ secrets.function-admin-api-key }}
-      gcp_credentials: ${{ secrets.gcp_credentials }}
-
-  deploy-gcp-production:
-    uses: ./.github/workflows/gcp_deploy.yml
-    if: inputs.build-platforms == 'gcp' && github.repository != inputs.template-repository-name && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref_name == github.event.repository.default_branch))
-    needs: [setup, build-gcp]
-    with:
-      environment: production
-      api-url: https://prod-api.lambdafeedback.com
-      repo:  ${{ needs.setup.outputs.region }}-docker.pkg.dev/wolfram-evaluation-functions/evaluation-function
-      image-name: ${{ needs.setup.outputs.evaluation_function_name }}
-      function-name: ${{ needs.setup.outputs.evaluation_function_name }}
-      region:  ${{ needs.setup.outputs.region }}
-    secrets:
-      function-admin-api-key: ${{ secrets.function-admin-api-key }}
+      build-secrets: ${{ secrets.build-secrets }}
       gcp_credentials: ${{ secrets.gcp_credentials }}

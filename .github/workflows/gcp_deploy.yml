@@ -40,7 +40,6 @@ jobs:
   deploy:
     name: Deploy (${{ inputs.environment }})
     runs-on: ubuntu-latest
-    environment: ${{ inputs.environment }}
     permissions:
       contents: 'read'
       id-token: 'write'
@@ -49,11 +48,13 @@ jobs:
     - uses: 'actions/checkout@v4'
 
     - id: 'auth'
+      name: "Login to GCP"
       uses: 'google-github-actions/auth@v3'
       with:
         credentials_json: '${{ secrets.gcp_credentials }}'
 
     - id: 'deploy'
+      name: "Deploy to GCP"
       run: |
         gcloud run deploy ${{inputs.function-name}} \
           --image ${{inputs.repo}}/${{inputs.image-name}} \

@@ -43,6 +43,16 @@ on:
         type: string
         description: "The platforms to build the image for"
         required: false
+      clean-disk:
+        type: boolean
+        description: "When enabled this will run the disk clean up step"
+        required: false
+        default: false
+      lfs:
+        type: boolean
+        description: "Support git LFS"
+        default: false
+        required: false
     secrets:
       aws-key-id:
         description: "The AWS access key ID"
@@ -72,6 +82,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          lfs: ${{inputs.lfs}}
           fetch-depth: 0
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -106,6 +117,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Free up disk space
+        if: ${{ inputs.clean-disk }}
         run: |
           echo "Available space before cleanup:"
           df -h
