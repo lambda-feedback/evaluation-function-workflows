@@ -78,6 +78,11 @@ on:
         description: "Max concurrent requests (lower for GPT-backed functions)"
         required: false
         default: '5'
+      sql_limit:
+        type: number
+        description: "Maximum number of SQL rows to sample for database testing"
+        required: false
+        default: 500
 
     secrets:
       aws-key-id:
@@ -224,13 +229,13 @@ jobs:
       gcp_credentials: ${{ secrets.gcp_credentials }}
       
   run-pre-production-tests:
-    name: 🧪 Run Staging Validation Tests
+    name: Run Staging Validation Tests
     if: inputs.environment == 'production' && needs.deploy-staging.result == 'success' && inputs.run-database-tests
     uses: lambda-feedback/Database-Testing/.github/workflows/test_evaluation_function.yml@main
     needs: [setup, deploy-staging]
     with:
       eval_function: ${{ needs.setup.outputs.evaluation_function_name }}
-      sql_limit: 500
+      sql_limit: ${{ inputs.sql_limit }}
       seed: ${{ inputs.seed }}
       request_delay: ${{ inputs.request_delay }}
       max_concurrency: ${{ inputs.max_concurrency }}
