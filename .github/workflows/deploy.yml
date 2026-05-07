@@ -246,7 +246,7 @@ jobs:
 
 
   await-approval:
-    name: "\U0001F6AB Await Manual Approval (Tests Failed)"
+    name: "Await Manual Approval (Tests Failed)"
     if: >
       always() &&
       inputs.environment == 'production' &&
