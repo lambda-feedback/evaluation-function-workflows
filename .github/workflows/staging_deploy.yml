@@ -88,7 +88,7 @@ jobs:
     needs: build-aws
     with:
       environment: staging
-      api-url: https://dev-api.lambdafeedback.com
+      api-url: https://staging-api.lambdafeedback.com
       image-name: ${{ needs.build-aws.outputs.registry }}/lambda-feedback-staging-functions-repository:${{ inputs.evaluation_function_name }}
       function-name: ${{ inputs.evaluation_function_name }}
       region: ${{ inputs.region}}
