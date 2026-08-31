@@ -28,6 +28,11 @@ on:
         type: string
         description: "The image repo"
         required: true
+      execution-environment:
+        type: string
+        description: "Cloud Run execution environment: gen2 (full Linux compat, needed for nsjail/user namespaces) or gen1 (gVisor)."
+        default: "gen2"
+        required: false
     secrets:
       function-admin-api-key:
         description: "The API key for the Lambda Feedback function admin API"
@@ -60,4 +65,5 @@ jobs:
           --image ${{inputs.repo}}/${{inputs.image-name}} \
           --region ${{inputs.region}} \
           --platform managed \
+          --execution-environment ${{ inputs.execution-environment }} \
           --allow-unauthenticated
