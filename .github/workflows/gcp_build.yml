@@ -54,9 +54,6 @@ on:
         default: false
         required: false
     secrets:
-      function-admin-api-key:
-        description: "The API key for the Lambda Feedback function admin API"
-        required: false
       gcp_credentials:
         description: "The JSON key for deploying to GCP"
         required: true
