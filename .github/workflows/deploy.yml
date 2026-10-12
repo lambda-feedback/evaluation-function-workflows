@@ -97,6 +97,9 @@ on:
       function-admin-api-key-production:
         description: "The API key for the Lambda Feedback production function admin API"
         required: false
+      function-admin-api-key:
+        description: "Deprecated: shared admin API key, used as a fallback when the staging/production keys are not set"
+        required: false
       build-secrets:
         description: "The Docker secrets to use for the build"
         required: false
@@ -205,13 +208,16 @@ jobs:
             echo "Error: aws-secret-key secret is required when build-platforms is 'aws'"
             exit 1
           fi
-          if [[ -z "${{ secrets.function-admin-api-key-staging }}" ]]; then
+          if [[ -z "${{ secrets.function-admin-api-key-staging || secrets.function-admin-api-key }}" ]]; then
             echo "Error: function-admin-api-key-staging secret is required when build-platforms is 'aws'"
             exit 1
           fi
-          if [[ "${{ inputs.environment }}" == "production" && -z "${{ secrets.function-admin-api-key-production }}" ]]; then
+          if [[ "${{ inputs.environment }}" == "production" && -z "${{ secrets.function-admin-api-key-production || secrets.function-admin-api-key }}" ]]; then
             echo "Error: function-admin-api-key-production secret is required when deploying to production on 'aws'"
             exit 1
+          fi
+          if [[ -n "${{ secrets.function-admin-api-key }}" ]]; then
+            echo "::warning::function-admin-api-key is deprecated, pass function-admin-api-key-staging and function-admin-api-key-production instead"
           fi
 
   deploy-staging:
@@ -231,7 +237,7 @@ jobs:
     secrets:
       aws-key-id: ${{ secrets.aws-key-id }}
       aws-secret-key: ${{ secrets.aws-secret-key }}
-      function-admin-api-key-staging: ${{ secrets.function-admin-api-key-staging }}
+      function-admin-api-key-staging: ${{ secrets.function-admin-api-key-staging || secrets.function-admin-api-key }}
       build-secrets: ${{ secrets.build-secrets }}
       gcp_credentials: ${{ secrets.gcp_credentials }}
 
@@ -301,6 +307,6 @@ jobs:
     secrets:
       aws-key-id: ${{ secrets.aws-key-id }}
       aws-secret-key: ${{ secrets.aws-secret-key }}
-      function-admin-api-key-production: ${{ secrets.function-admin-api-key-production }}
+      function-admin-api-key-production: ${{ secrets.function-admin-api-key-production || secrets.function-admin-api-key }}
       build-secrets: ${{ secrets.build-secrets }}
       gcp_credentials: ${{ secrets.gcp_credentials }}
