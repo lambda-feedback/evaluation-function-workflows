@@ -91,9 +91,12 @@ on:
       aws-secret-key:
         description: "The AWS secret access key"
         required: true
-      function-admin-api-key:
-        description: "The API key for the Lambda Feedback function admin API"
-        required: true
+      function-admin-api-key-staging:
+        description: "The API key for the Lambda Feedback staging function admin API"
+        required: false
+      function-admin-api-key-production:
+        description: "The API key for the Lambda Feedback production function admin API"
+        required: false
       build-secrets:
         description: "The Docker secrets to use for the build"
         required: false
@@ -202,8 +205,12 @@ jobs:
             echo "Error: aws-secret-key secret is required when build-platforms is 'aws'"
             exit 1
           fi
-          if [[ -z "${{ secrets.function-admin-api-key }}" ]]; then
-            echo "Error: function-admin-api-key secret is required when build-platforms is 'aws'"
+          if [[ -z "${{ secrets.function-admin-api-key-staging }}" ]]; then
+            echo "Error: function-admin-api-key-staging secret is required when build-platforms is 'aws'"
+            exit 1
+          fi
+          if [[ "${{ inputs.environment }}" == "production" && -z "${{ secrets.function-admin-api-key-production }}" ]]; then
+            echo "Error: function-admin-api-key-production secret is required when deploying to production on 'aws'"
             exit 1
           fi
 
@@ -224,10 +231,10 @@ jobs:
     secrets:
       aws-key-id: ${{ secrets.aws-key-id }}
       aws-secret-key: ${{ secrets.aws-secret-key }}
-      function-admin-api-key: ${{ secrets.function-admin-api-key }}
+      function-admin-api-key-staging: ${{ secrets.function-admin-api-key-staging }}
       build-secrets: ${{ secrets.build-secrets }}
       gcp_credentials: ${{ secrets.gcp_credentials }}
-      
+
   run-pre-production-tests:
     name: Run Staging Validation Tests
     if: inputs.environment == 'production' && needs.deploy-staging.result == 'success' && inputs.run-database-tests
@@ -294,6 +301,6 @@ jobs:
     secrets:
       aws-key-id: ${{ secrets.aws-key-id }}
       aws-secret-key: ${{ secrets.aws-secret-key }}
-      function-admin-api-key: ${{ secrets.function-admin-api-key }}
+      function-admin-api-key-production: ${{ secrets.function-admin-api-key-production }}
       build-secrets: ${{ secrets.build-secrets }}
       gcp_credentials: ${{ secrets.gcp_credentials }}

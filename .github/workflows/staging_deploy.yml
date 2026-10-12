@@ -50,9 +50,9 @@ on:
       aws-secret-key:
         description: "The AWS secret access key"
         required: true
-      function-admin-api-key:
-        description: "The API key for the Lambda Feedback function admin API"
-        required: true
+      function-admin-api-key-staging:
+        description: "The API key for the Lambda Feedback staging function admin API"
+        required: false
       build-secrets:
         description: "The Docker secrets to use for the build"
         required: false
@@ -95,7 +95,7 @@ jobs:
     secrets:
       aws-key-id: ${{ secrets.aws-key-id }}
       aws-secret-key: ${{ secrets.aws-secret-key }}
-      function-admin-api-key: ${{ secrets.function-admin-api-key }}
+      function-admin-api-key: ${{ secrets.function-admin-api-key-staging }}
 
 
   build-gcp:
@@ -115,7 +115,6 @@ jobs:
       build-push: ${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref_name == github.event.repository.default_branch) }}
       lfs: ${{inputs.lfs}}
     secrets:
-      function-admin-api-key: ${{ secrets.function-admin-api-key }}
       gcp_credentials: ${{ secrets.gcp_credentials }}
 
   deploy-gcp-staging:
@@ -130,5 +129,4 @@ jobs:
       function-name: ${{ inputs.evaluation_function_name }}-staging
       region: ${{ inputs.region }}
     secrets:
-      function-admin-api-key: ${{ secrets.function-admin-api-key }}
       gcp_credentials: ${{ secrets.gcp_credentials }}
