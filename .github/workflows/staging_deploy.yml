@@ -124,7 +124,7 @@ jobs:
     with:
       environment: staging
       api-url: https://prod-api.lambdafeedback.com
-      repo:  ${{ inputs.region }}-docker.pkg.dev/wolfram-evaluation-functions/evaluation-function-staging
+      repo:  europe-west2-docker.pkg.dev/wolfram-evaluation-functions/evaluation-function-staging
       image-name: ${{ inputs.evaluation_function_name }}
       function-name: ${{ inputs.evaluation_function_name }}-staging
       region: ${{ inputs.region }}
